@@ -1,7 +1,7 @@
 using FishNet.Object;
 using UnityEngine;
 
-public class Interactable : NetworkBehaviour
+public class Interactable : MonoBehaviour
 {
 
     [Header("Interactable")]
@@ -23,6 +23,7 @@ public class Interactable : NetworkBehaviour
         if (!other.CompareTag(_otherTag)) return;
         if (_localPlayerOnly && other.GetComponent<Player>() != UiManager.Player) return;
 
+        Debug.Log("issa plyaer");
         UiInteract.Show(InteractText);
     }
 

@@ -9,17 +9,14 @@ public class ItemDrop : Interactable
 
     [SerializeField] private SpriteRenderer _sr = null;
 
-    private void Awake()
+    protected override void Start()
     {
         if (ItemValue.Item == null || ItemValue.Quantity <= 0)
         {
             Debug.LogWarning($"Item drop '{name}' was invalid. Destroying it...");
             Destroy(gameObject);
         }
-    }
 
-    protected override void Start()
-    {
         if (string.IsNullOrEmpty(InteractText))
             InteractText = ItemValue.Item.name;
     }
@@ -28,7 +25,7 @@ public class ItemDrop : Interactable
     {
         base.OnTriggerEnter2D(other);
 
-        if (!IsServer) return;
+        //if (!IsServer) return;
         if (other.CompareTag("Player") && !other.isTrigger)
         {
             //PlayerInventory inv = other.GetComponent<PlayerInventory>();
