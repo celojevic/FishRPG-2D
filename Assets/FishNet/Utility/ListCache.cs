@@ -1,0 +1,78 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace FishNet.Utility
+{
+    /// <summary>
+    /// Creates a reusable cache of T which auto expands.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class ListCache<T>
+    {
+        #region Public.
+        /// <summary>
+        /// Collection cache is for.
+        /// </summary>
+        public List<T> Collection;
+        /// <summary>
+        /// Entries currently written.
+        /// </summary>
+        public int Written { get; private set; } = 0;
+        #endregion
+
+        public ListCache()
+        {
+            Collection = new List<T>();
+        }
+        public ListCache(int capacity)
+        {
+            Collection = new List<T>(capacity);
+        }
+
+        /// <summary>
+        /// Adds a new value to Collection and returns it.
+        /// </summary>
+        /// <param name="value"></param>
+        public T AddReference()
+        {
+            if (Collection.Count <= Written)
+            {
+                T next = Activator.CreateInstance<T>();
+                Collection.Add(next);
+                Written++;
+                return next;
+            }
+            else
+            {
+                T next = Collection[Written];
+                Written++;
+                return next;
+            }
+        }
+
+
+        /// <summary>
+        /// Adds value to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValue(T value)
+        {
+            if (Collection.Count <= Written)
+                Collection.Add(value);
+            else
+                Collection[Written] = value;
+
+            Written++;
+        }
+
+        /// <summary>
+        /// Resets cache.
+        /// </summary>
+        public void Reset()
+        {
+            Written = 0;
+        }
+    }
+
+
+}
