@@ -5,14 +5,34 @@ using UnityEngine;
 public class VitalBase : NetworkBehaviour
 {
 
-    internal int CurrentVital;
+    private int _current;
+    internal int CurrentVital
+    {
+        get => _current;
+        set
+        {
+            // same value
+            if (value == _current) return;
+
+            _current = value;
+            OnVitalChanged?.Invoke();
+        }
+    }
+
     internal float Percent => (float)CurrentVital / (float)MaxVital;
 
     [Header("Base")]
     public int MaxVital = 50;
     public int MinVital = 0;
 
+    /// <summary>
+    /// Invoked whenever the vital hits 0. Kind of like OnDeath for Health.
+    /// </summary>
     protected event Action OnDepleted;
+    /// <summary>
+    /// Invoked any time the vital changes.
+    /// </summary>
+    public event Action OnVitalChanged;
 
     private void Start()
     {
