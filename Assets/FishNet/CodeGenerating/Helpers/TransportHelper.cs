@@ -3,21 +3,31 @@ using FishNet.Transporting;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal static class TransportHelper
+    internal class TransportHelper
     {
         #region Reflection references.        
-        internal static TypeReference Channel_TypeRef;
+        internal TypeReference Channel_TypeRef;
         #endregion
+
+        /// <summary>
+        /// Resets cached values.
+        /// </summary>
+        private void ResetValues()
+        {
+            Channel_TypeRef = null;
+        }
+
 
         /// <summary>
         /// Imports references needed by this helper.
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal static bool ImportReferences(ModuleDefinition moduleDef)
+        internal bool ImportReferences()
         {
-           // Channel_ParameterDef_FullName = typeof(Channel).FullName;
-            Channel_TypeRef = moduleDef.ImportReference(typeof(Channel));
+            ResetValues();
+
+            Channel_TypeRef = CodegenSession.Module.ImportReference(typeof(Channel));
 
             return true;
         }

@@ -7,6 +7,7 @@ using FishNet.Broadcast;
 using FishNet.Object.Helping;
 using FishNet.Broadcast.Helping;
 using FishNet.Transporting;
+using FishNet.Object;
 
 namespace FishNet.Managing.Server
 {
@@ -154,14 +155,18 @@ namespace FishNet.Managing.Server
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(NetworkConnection connection, T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(NetworkConnection connection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Active)
             {
-                Debug.LogError($"Cannot send broadcast to client because server is not active.");
+                Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
-
+            if (requireAuthenticated && !connection.Authenticated)
+            {
+                Debug.LogWarning($"Cannot send broadcast to client because they are not authenticated.");
+                return;
+            }
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
@@ -175,7 +180,7 @@ namespace FishNet.Managing.Server
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(HashSet<NetworkConnection> connections, T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(HashSet<NetworkConnection> connections, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Active)
             {
@@ -183,14 +188,57 @@ namespace FishNet.Managing.Server
                 return;
             }
 
+            bool failedAuthentication = false;
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
                 //Send to connections.
                 foreach (NetworkConnection conn in connections)
-                    NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
+                {
+                    if (requireAuthenticated && !conn.Authenticated)
+                        failedAuthentication = true;
+                    else
+                        NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
+                }
+            }
+
+            if (failedAuthentication)
+            {
+                Debug.LogWarning($"One or more broadcast did not send to a client because they were not authenticated.");
+                return;
             }
         }
+
+        /// <summary>
+        /// Sends a Broadcast to observers for networkObject.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="message"></param>
+        /// <param name="channel"></param>
+        public void Broadcast<T>(NetworkObject networkObject, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (!Active)
+            {
+                Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
+                return;
+            }
+            if (networkObject == null)
+            {
+                Debug.LogWarning($"Cannot send broadcast because networkObject is null.");
+                return;
+            }
+
+            using (PooledWriter writer = WriterPool.GetWriter())
+            {
+                ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
+
+                if (networkObject.UsingObservers)
+                    Broadcast(networkObject.Observers, message, requireAuthenticated, channel);
+                else
+                    Broadcast(message, requireAuthenticated, channel);
+            }
+        }
+
 
         /// <summary>
         /// Sends a broadcast to all clients.
@@ -198,7 +246,7 @@ namespace FishNet.Managing.Server
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(T message, bool requireAuthenticated, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!Active)
             {
@@ -206,6 +254,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
+            bool failedAuthentication = false;
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
@@ -213,9 +262,16 @@ namespace FishNet.Managing.Server
                 foreach (NetworkConnection conn in Clients.Values)
                 {
                     if (requireAuthenticated && !conn.Authenticated)
-                        continue;
-                    NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
+                        failedAuthentication = true;
+                    else
+                        NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
                 }
+            }
+
+            if (failedAuthentication)
+            {
+                Debug.LogWarning($"One or more broadcast did not send to a client because they were not authenticated.");
+                return;
             }
         }
 

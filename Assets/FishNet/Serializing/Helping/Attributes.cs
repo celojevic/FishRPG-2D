@@ -2,6 +2,7 @@
 
 namespace FishNet.Serializing.Helping
 {
-    public class CodegenIgnoreAttribute : Attribute { }
+    public class CodegenExcludeAttribute : Attribute { }
+    public class CodegenIncludeInternalAttribute : Attribute { }
 
 }

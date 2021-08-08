@@ -43,12 +43,12 @@ namespace FishNet.Connection
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(T message, bool requireAuthenticated, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!IsValid)
                 Debug.LogError($"Connection is not valid, cannot send broadcast.");
             else
-                InstanceFinder.ServerManager.Broadcast<T>(this, message, channel);
+                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
         }
 
         /// <summary>

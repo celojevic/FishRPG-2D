@@ -66,6 +66,34 @@ namespace FishNet.Utility
         }
 
         /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValues(T[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+                AddValue(values[i]);
+        }
+        /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValues(List<T> values)
+        {
+            for (int i = 0; i < values.Count; i++)
+                AddValue(values[i]);
+        }
+        /// <summary>
+        /// Adds values to Collection.
+        /// </summary>
+        /// <param name="value"></param>
+        public void AddValues(HashSet<T> values)
+        {
+            foreach (T item in values)
+                AddValue(item);
+        }
+
+        /// <summary>
         /// Resets cache.
         /// </summary>
         public void Reset()

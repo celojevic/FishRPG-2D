@@ -10,25 +10,29 @@ using Unity.CompilationPipeline.Common.Diagnostics;
 namespace FishNet.CodeGenerating.Helping
 {
 
-    internal static class GenericReaderHelper
+    internal class GenericReaderHelper
     {
 
         #region Reflection references.
-        private static ModuleDefinition _moduleDef;
-        private static TypeReference _genericReaderTypeRef;
-        private static TypeReference _readerTypeRef;
-        private static MethodReference _readGetSetMethodRef;
-        private static TypeReference _functionTypeRef;
-        private static MethodReference _functionConstructorMethodRef;
-        private static TypeDefinition _generatedReaderWriterClassTypeDef;
-        private static MethodDefinition _generatedReaderWriterConstructorMethodDef;
+        private TypeReference _genericReaderTypeRef;
+        private TypeReference _readerTypeRef;
+        private MethodReference _readGetSetMethodRef;
+        private TypeReference _functionTypeRef;
+        private MethodReference _functionConstructorMethodRef;
+        private TypeDefinition _generatedReaderWriterClassTypeDef;
+        private MethodDefinition _generatedReaderWriterOnLoadMethodDef;
         #endregion
 
         #region Misc.
         /// <summary>
         /// TypeReferences which have already had delegates made for.
         /// </summary>
-        private static HashSet<TypeReference> _delegatedTypes = new HashSet<TypeReference>();
+        private HashSet<TypeReference> _delegatedTypes = new HashSet<TypeReference>();
+        #endregion
+
+        #region Const.
+        internal const string FIRSTINITIALIZE_METHOD_NAME = GenericWriterHelper.FIRSTINITIALIZE_METHOD_NAME;
+        internal const MethodAttributes FIRSTINITIALIZE_METHOD_ATTRIBUTES = GenericWriterHelper.FIRSTINITIALIZE_METHOD_ATTRIBUTES;
         #endregion
 
         /// <summary>
@@ -36,59 +40,56 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal static bool ImportReferences(ModuleDefinition moduleDef)
+        internal bool ImportReferences()
         {
-            _moduleDef = moduleDef;
-            _genericReaderTypeRef = _moduleDef.ImportReference(typeof(GenericReader<>));
-            _readerTypeRef = _moduleDef.ImportReference(typeof(Reader));
-            _functionTypeRef = _moduleDef.ImportReference(typeof(Func<,>));
-            _functionConstructorMethodRef = _moduleDef.ImportReference(typeof(Func<,>).GetConstructors()[0]);
+            _genericReaderTypeRef = CodegenSession.Module.ImportReference(typeof(GenericReader<>));
+            _readerTypeRef = CodegenSession.Module.ImportReference(typeof(Reader));
+            _functionTypeRef = CodegenSession.Module.ImportReference(typeof(Func<,>));
+            _functionConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Func<,>).GetConstructors()[0]);
 
             System.Reflection.PropertyInfo writePropertyInfo = typeof(GenericReader<>).GetProperty(nameof(GenericReader<int>.Read));
-            _readGetSetMethodRef = _moduleDef.ImportReference(writePropertyInfo.GetSetMethod());
+            _readGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
 
             return true;
         }
 
         /// <summary>
-        /// Creates a Read delegate for readMethodRef and places it within the generated reader/writer static constructor.
+        /// Creates a Read delegate for readMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
         /// <param name="readMethodRef"></param>
         /// <param name="diagnostics"></param>
-        internal static void CreateReadDelegate(MethodReference readMethodRef, List<DiagnosticMessage> diagnostics)
+        internal void CreateReadDelegate(MethodReference readMethodRef)
         {
+            bool created;
             /* If class for generated reader/writers isn't known yet.
             * It's possible this is the case if the entry being added
             * now is the first entry. That would mean the class was just
             * generated. */
             if (_generatedReaderWriterClassTypeDef == null)
-                _generatedReaderWriterClassTypeDef = GeneralHelper.GetOrCreateClass(_moduleDef, out _,ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_CLASS_NAME, null);
+                _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out _, ReaderGenerator.GENERATED_TYPE_ATTRIBUTES, ReaderGenerator.GENERATED_CLASS_NAME, null);
 
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
-            if (_generatedReaderWriterConstructorMethodDef == null)
+            if (_generatedReaderWriterOnLoadMethodDef == null)
             {
-                bool created;
-                _generatedReaderWriterConstructorMethodDef = GeneralHelper.GetOrCreateConstructor(_generatedReaderWriterClassTypeDef, out created, diagnostics, true);
+                _generatedReaderWriterOnLoadMethodDef = CodegenSession.GeneralHelper.GetOrCreateMethod(_generatedReaderWriterClassTypeDef, out created, FIRSTINITIALIZE_METHOD_ATTRIBUTES, FIRSTINITIALIZE_METHOD_NAME, CodegenSession.Module.TypeSystem.Void);
                 if (created)
-                {                    _generatedReaderWriterClassTypeDef.Methods.Add(_generatedReaderWriterConstructorMethodDef);
-                    GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterConstructorMethodDef);
-                } 
+                    CodegenSession.GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
             }
 
             //Check if ret already exist, if so remove it; ret will be added on again in this method.
-            if (_generatedReaderWriterConstructorMethodDef.Body.Instructions.Count != 0)
+            if (_generatedReaderWriterOnLoadMethodDef.Body.Instructions.Count != 0)
             {
-                int lastIndex = (_generatedReaderWriterConstructorMethodDef.Body.Instructions.Count - 1);
-                if (_generatedReaderWriterConstructorMethodDef.Body.Instructions[lastIndex].OpCode == OpCodes.Ret)
-                    _generatedReaderWriterConstructorMethodDef.Body.Instructions.RemoveAt(lastIndex);
+                int lastIndex = (_generatedReaderWriterOnLoadMethodDef.Body.Instructions.Count - 1);
+                if (_generatedReaderWriterOnLoadMethodDef.Body.Instructions[lastIndex].OpCode == OpCodes.Ret)
+                    _generatedReaderWriterOnLoadMethodDef.Body.Instructions.RemoveAt(lastIndex);
             }
-             
-            ILProcessor processor = _generatedReaderWriterConstructorMethodDef.Body.GetILProcessor();
+
+            ILProcessor processor = _generatedReaderWriterOnLoadMethodDef.Body.GetILProcessor();
             TypeReference dataType = readMethodRef.ReturnType;
             if (_delegatedTypes.Contains(dataType))
             {
-                diagnostics.AddError($"Generic read already created for {dataType.FullName}.");
+                CodegenSession.Diagnostics.AddError($"Generic read already created for {dataType.FullName}.");
                 return;
             }
             else

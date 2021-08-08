@@ -17,9 +17,9 @@ namespace FishNet.Serializing
     {
 
         public static void WriteByte(this Writer writer, byte value) => writer.WriteByte(value);
-        [CodegenIgnore]
+        [CodegenExclude]
         public static void WriteBytes(this Writer writer, byte[] buffer, int offset, int count) => writer.WriteBytes(buffer, offset, count);
-        [CodegenIgnore]
+        [CodegenExclude]
         public static void WriteBytesAndSize(this Writer writer, byte[] buffer, int offset, int count) => writer.WriteBytesAndSize(buffer, offset, count);
         public static void WriteBytesAndSize(this Writer writer, byte[] value) => writer.WriteBytesAndSize(value);
 
@@ -37,7 +37,7 @@ namespace FishNet.Serializing
         public static void WriteDecimal(this Writer writer, decimal value) => writer.WriteDecimal(value);
         public static void WriteString(this Writer writer, string value) => writer.WriteString(value);
         public static void WriteArraySegmentAndSize(this Writer writer, ArraySegment<byte> value) => writer.WriteArraySegmentAndSize(value);
-        [CodegenIgnore]
+        [CodegenExclude]
         public static void WriteArraySegment(this Writer writer, ArraySegment<byte> value) => writer.WriteArraySegment(value);
         public static void WriteVector2(this Writer writer, Vector2 value) => writer.WriteVector2(value);
         public static void WriteVector3(this Writer writer, Vector3 value) => writer.WriteVector3(value);
@@ -58,7 +58,7 @@ namespace FishNet.Serializing
         public static void WriteNetworkBehaviour(this Writer writer, NetworkBehaviour value) => writer.WriteNetworkBehaviour(value);
         public static void WriteChannel(this Writer writer, Channel value) => writer.WriteChannel(value);
         public static void WriteNetworkConnection(this Writer writer, NetworkConnection value) => writer.WriteNetworkConnection(value);
-        [CodegenIgnore]
+        [CodegenExclude]
         public static void Write<T>(this Writer writer, T value) => writer.Write<T>(value);
 
     }

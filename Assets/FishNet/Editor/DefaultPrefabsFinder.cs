@@ -55,7 +55,7 @@ namespace FishNet.Managing.Object
 
             justPopulated = false;
             if (_defaultPrefabs == null)
-                Debug.LogWarning($"DefaultPrefabObejcts not found. Prefabs list will not be automatically populated.");
+                Debug.LogWarning($"DefaultPrefabObjects not found. Prefabs list will not be automatically populated.");
             else
                 justPopulated = PopulateDefaultPrefabs();
 

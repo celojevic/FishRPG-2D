@@ -13,12 +13,13 @@ namespace FishNet.Serializing
     /// Used for write references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-
+    [CodegenIncludeInternal]
     public static class GenericWriter<T>
     {
         public static Action<Writer, T> Write { get; set; }
     }
 
+    [CodegenIncludeInternal]
     public partial class Writer
     {
 
@@ -120,7 +121,7 @@ namespace FishNet.Serializing
         /// <param name="buffer"></param>
         /// <param name="offset"></param>
         /// <param name="count"></param>
-        [CodegenIgnore]
+        [CodegenExclude]
         public void WriteBytes(byte[] buffer, int offset, int count)
         {
             if (Position + count > _buffer.Length)
@@ -138,7 +139,7 @@ namespace FishNet.Serializing
         /// <param name="offset"></param>
         /// <param name="count"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenIgnore]
+        [CodegenExclude]
         public void WriteBytesAndSize(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -395,7 +396,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenIgnore]
+        [CodegenExclude]
         public void WriteArraySegment(ArraySegment<byte> value)
         {
             WriteBytes(value.Array, value.Offset, value.Count);
@@ -715,7 +716,7 @@ namespace FishNet.Serializing
         /// Writes a packed whole number.
         /// </summary>
         /// <param name="value"></param>
-        [CodegenIgnore]
+        [CodegenExclude]
         public void WritePackedWhole(ulong value)
         {
             if (value <= byte.MaxValue)
@@ -775,7 +776,7 @@ namespace FishNet.Serializing
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         public void Write<T>(T value)
-        {
+        {            
             Action<Writer, T> del = GenericWriter<T>.Write;
             if (del == null)
                 Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");

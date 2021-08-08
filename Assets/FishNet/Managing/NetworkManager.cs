@@ -209,9 +209,11 @@ namespace FishNet.Managing
         #region Editor.
 #if UNITY_EDITOR
         private void OnValidate()
-        {
+        { 
             FindTransportManager();
-
+        }
+        protected virtual void Reset()
+        {
             if (_spawnablePrefabs == null)
             {
                 _spawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
@@ -220,7 +222,6 @@ namespace FishNet.Managing
                     Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
             }
         }
-
 #endif
         #endregion
 

@@ -15,11 +15,13 @@ namespace FishNet.Serializing
     /// Used for read references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [CodegenIncludeInternal]
     public static class GenericReader<T>
     {
         public static Func<Reader, T> Read { internal get; set; }
     }
 
+    [CodegenIncludeInternal]
     public partial class Reader
     {
         #region Public.
@@ -187,7 +189,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <returns><paramref name="target"/></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenIgnore]
+        [CodegenExclude]
         public void ReadBytes(ref byte[] target, int count)
         {
             if (target == null)
@@ -204,7 +206,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="count"></param>
         /// <returns></returns>
-        [CodegenIgnore]
+        [CodegenExclude]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ArraySegment<byte> ReadArraySegment(int count)
         {
@@ -417,7 +419,7 @@ namespace FishNet.Serializing
         /// <returns>Bytes read.</returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenIgnore]
+        [CodegenExclude]
         public int ReadBytesAndSize(ref byte[] target)
         {
             int size = ReadInt32();
@@ -621,7 +623,7 @@ namespace FishNet.Serializing
         /// <returns></returns>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CodegenIgnore]
+        [CodegenExclude]
         public byte[] ReadBytesAllocated(int count)
         {
             byte[] bytes = new byte[count];
@@ -741,7 +743,7 @@ namespace FishNet.Serializing
         /// <summary>
         /// Reads a packed whole number.
         /// </summary>
-        [CodegenIgnore]
+        [CodegenExclude]
         public ulong ReadPackedWhole()
         {
             if (Remaining < 1)

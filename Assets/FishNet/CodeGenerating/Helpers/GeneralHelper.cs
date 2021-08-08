@@ -12,65 +12,104 @@ using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal static class GeneralHelper
+    internal class GeneralHelper
     {
         #region Reflection references.
-        internal static MethodReference Debug_LogWarning_MethodRef;
-        private static MethodReference EqualityComparer_Default_MethodRef;
-        internal static MethodReference IsServer_MethodRef = null;
-        internal static MethodReference IsClient_MethodRef = null;
-        internal static MethodReference NetworkObject_Deinitializing_MethodRef = null;
-        private static Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
-        private static Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
-        private static Dictionary<Type, GenericInstanceMethod> _equalityComparerMethodReferences = new Dictionary<Type, GenericInstanceMethod>();
-        private static string NonSerialized_Attribute_FullName;
-        private static string Single_FullName;
+        internal MethodReference Debug_LogWarning_MethodRef;
+        private MethodReference EqualityComparer_Default_MethodRef;
+        internal MethodReference IsServer_MethodRef = null;
+        internal MethodReference IsClient_MethodRef = null;
+        internal MethodReference NetworkObject_Deinitializing_MethodRef = null;
+        private Dictionary<Type, TypeReference> _importedTypeReferences = new Dictionary<Type, TypeReference>();
+        private Dictionary<FieldDefinition, FieldReference> _importedFieldReferences = new Dictionary<FieldDefinition, FieldReference>();
+        private Dictionary<Type, GenericInstanceMethod> _equalityComparerMethodReferences = new Dictionary<Type, GenericInstanceMethod>();
+        private string NonSerialized_Attribute_FullName;
+        private string Single_FullName;
         #endregion
 
-        #region Misc.
-        private static ModuleDefinition _moduleDef;
-        #endregion        
-        internal static bool ImportReferences(ModuleDefinition moduleDef)
+        internal bool ImportReferences()
         {
-            _importedFieldReferences.Clear();
-            _importedTypeReferences.Clear();
-            _equalityComparerMethodReferences.Clear();
-
-            _moduleDef = moduleDef;
-
             NonSerialized_Attribute_FullName = typeof(NonSerializedAttribute).FullName;
             Single_FullName = typeof(float).FullName;
 
             Type comparers = typeof(Comparers);
-            EqualityComparer_Default_MethodRef = moduleDef.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
+            EqualityComparer_Default_MethodRef = CodegenSession.Module.ImportReference<Comparers>(x => Comparers.EqualityCompare<object>(default, default));
 
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
             {
                 if (methodInfo.Name == nameof(UnityEngine.Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
-                    Debug_LogWarning_MethodRef = moduleDef.ImportReference(methodInfo);
+                    Debug_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             Type codegenHelper = typeof(CodegenHelper);
             foreach (System.Reflection.MethodInfo methodInfo in codegenHelper.GetMethods())
             {
                 if (methodInfo.Name == nameof(CodegenHelper.NetworkObject_Deinitializing))
-                    NetworkObject_Deinitializing_MethodRef = _moduleDef.ImportReference(methodInfo);
+                    NetworkObject_Deinitializing_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(CodegenHelper.IsClient))
-                    IsClient_MethodRef = _moduleDef.ImportReference(methodInfo);
+                    IsClient_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 else if (methodInfo.Name == nameof(CodegenHelper.IsServer))
-                    IsServer_MethodRef = _moduleDef.ImportReference(methodInfo);
+                    IsServer_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             return true;
         }
 
         /// <summary>
+        /// Returns if typeDef should be ignored.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal bool IgnoreTypeDefinition(TypeDefinition typeDef)
+        {
+            //If FishNet assembly.
+            if (typeDef.Module.Assembly.Name.Name == FishNetILPP.RUNTIME_ASSEMBLY_NAME)
+            {
+                foreach (CustomAttribute item in typeDef.CustomAttributes)
+                {
+                    if (item.AttributeType.FullName == typeof(CodegenIncludeInternalAttribute).FullName)
+                        return false;
+                }
+
+                return true;
+            }
+            //Not FishNet assembly.
+            else
+            {
+                foreach (CustomAttribute item in typeDef.CustomAttributes)
+                {
+                    if (item.AttributeType.FullName == typeof(CodegenExcludeAttribute).FullName)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns if methodInfo should be ignored.
+        /// </summary>
+        /// <param name="methodInfo"></param>
+        /// <returns></returns>
+        internal bool IgnoreMethod(System.Reflection.MethodInfo methodInfo)
+        {
+            foreach (System.Reflection.CustomAttributeData item in methodInfo.CustomAttributes)
+            {
+                if (item.AttributeType == typeof(CodegenExcludeAttribute))
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        /// <summary>
         /// Gets the equality comparerer method for type.
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        internal static GenericInstanceMethod GetEqualityComparer(Type type)
+        internal GenericInstanceMethod GetEqualityComparer(Type type)
         {
             GenericInstanceMethod result;
             if (_equalityComparerMethodReferences.TryGetValue(type, out result))
@@ -90,7 +129,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates the RuntimeInitializeOnLoadMethod attribute for a method.
         /// </summary>
-        internal static void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef)
+        internal void CreateRuntimeInitializeOnLoadMethodAttribute(MethodDefinition methodDef)
         {
             TypeReference attTypeRef = GetTypeReference(typeof(RuntimeInitializeOnLoadMethodAttribute));
             foreach (CustomAttribute item in methodDef.CustomAttributes)
@@ -101,7 +140,7 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             MethodDefinition constructorMethodDef = attTypeRef.ResolveDefaultPublicConstructor();
-            MethodReference constructorMethodRef = _moduleDef.ImportReference(constructorMethodDef);
+            MethodReference constructorMethodRef = CodegenSession.Module.ImportReference(constructorMethodDef);
             CustomAttribute ca = new CustomAttribute(constructorMethodRef);
             methodDef.CustomAttributes.Add(ca);
         }
@@ -111,7 +150,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static AutoPackType GetDefaultAutoPackType(TypeReference typeRef)
+        internal AutoPackType GetDefaultAutoPackType(TypeReference typeRef)
         {
             //Singles are defauled to unpacked.
             if (typeRef.FullName == Single_FullName)
@@ -121,13 +160,36 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
+        /// Gets the FirstInitialize method in typeDef or creates the method should it not exist.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal MethodDefinition GetOrCreateMethod(TypeDefinition typeDef, out bool created, MethodAttributes methodAttr, string methodName, TypeReference returnType)
+        {
+            MethodDefinition result = typeDef.GetMethod(methodName);
+            if (result == null)
+            {
+                created = true;
+                result = new MethodDefinition(methodName, methodAttr, returnType);
+                typeDef.Methods.Add(result);
+            }
+            else
+            {
+                created = false;
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
         /// Gets a class within moduleDef or creates and returns the class if it does not already exist.
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal static TypeDefinition GetOrCreateClass(ModuleDefinition moduleDef, out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef)
+        internal TypeDefinition GetOrCreateClass( out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef)
         {
-            TypeDefinition type = moduleDef.GetClass(className);
+            TypeDefinition type = CodegenSession.Module.GetClass(className);
             if (type != null)
             {
                 created = false;
@@ -137,12 +199,12 @@ namespace FishNet.CodeGenerating.Helping
             {
                 created = true;
                 type = new TypeDefinition(FishNetILPP.RUNTIME_ASSEMBLY_NAME, className,
-                    typeAttr, moduleDef.ImportReference(typeof(object)));
+                    typeAttr, CodegenSession.Module.ImportReference(typeof(object)));
                 //Add base class if specified.
                 if (baseTypeRef != null)
-                    type.BaseType = moduleDef.ImportReference(baseTypeRef);
+                    type.BaseType = CodegenSession.Module.ImportReference(baseTypeRef);
 
-                moduleDef.Types.Add(type);
+                CodegenSession.Module.Types.Add(type);
                 return type;
             }
         }
@@ -153,7 +215,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="fieldDef"></param>
         /// <returns></returns>
-        internal static bool HasNonSerializableAttribute(FieldDefinition fieldDef)
+        internal bool HasNonSerializableAttribute(FieldDefinition fieldDef)
         {
             foreach (CustomAttribute customAttribute in fieldDef.CustomAttributes)
             {
@@ -169,7 +231,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool HasNonSerializableAttribute(TypeDefinition typeDef)
+        internal bool HasNonSerializableAttribute(TypeDefinition typeDef)
         {
             foreach (CustomAttribute customAttribute in typeDef.CustomAttributes)
             {
@@ -186,12 +248,12 @@ namespace FishNet.CodeGenerating.Helping
         /// Gets a TypeReference for a type.
         /// </summary>
         /// <param name="type"></param>
-        internal static TypeReference GetTypeReference(Type type)
+        internal TypeReference GetTypeReference(Type type)
         {
             TypeReference result;
             if (!_importedTypeReferences.TryGetValue(type, out result))
             {
-                result = _moduleDef.ImportReference(type);
+                result = CodegenSession.Module.ImportReference(type);
                 _importedTypeReferences.Add(type, result);
             }
 
@@ -202,12 +264,12 @@ namespace FishNet.CodeGenerating.Helping
         /// Gets a FieldReference for a type.
         /// </summary>
         /// <param name="type"></param>
-        internal static FieldReference GetFieldReference(FieldDefinition fieldDef)
+        internal FieldReference GetFieldReference(FieldDefinition fieldDef)
         {
             FieldReference result;
             if (!_importedFieldReferences.TryGetValue(fieldDef, out result))
             {
-                result = _moduleDef.ImportReference(fieldDef);
+                result = CodegenSession.Module.ImportReference(fieldDef);
                 _importedFieldReferences.Add(fieldDef, result);
             }
 
@@ -215,13 +277,13 @@ namespace FishNet.CodeGenerating.Helping
         }
 
         /// <summary>
-        /// Gets the current static constructor for typeDef, or makes a new one if constructor doesn't exist.
+        /// Gets the current constructor for typeDef, or makes a new one if constructor doesn't exist.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static MethodDefinition GetOrCreateConstructor(TypeDefinition typeDef, out bool created, List<DiagnosticMessage> diagnostics, bool makeStatic)
+        internal MethodDefinition GetOrCreateConstructor(TypeDefinition typeDef, out bool created, bool makeStatic)
         {
-            // find static constructor
+            // find constructor
             MethodDefinition cctorMethodDef = typeDef.GetMethod(".cctor");
             if (cctorMethodDef == null)
                 cctorMethodDef = typeDef.GetMethod(".ctor");
@@ -241,7 +303,7 @@ namespace FishNet.CodeGenerating.Helping
                     }
                     else
                     {
-                        diagnostics.AddError($"{typeDef.Name} has invalid class constructor");
+                        CodegenSession.Diagnostics.AddError($"{typeDef.Name} has invalid class constructor");
                         return null;
                     }
                 }
@@ -256,7 +318,7 @@ namespace FishNet.CodeGenerating.Helping
                 if (makeStatic)
                     methodAttr |= Mono.Cecil.MethodAttributes.Static;
 
-                //Create a static constructor.
+                //Create a constructor.
                 cctorMethodDef = new MethodDefinition(".cctor", methodAttr,
                         typeDef.Module.TypeSystem.Void
                         );
@@ -270,7 +332,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="result"></param>
-        internal static void CreateRetBoolean(ILProcessor processor, bool result)
+        internal void CreateRetBoolean(ILProcessor processor, bool result)
         {
             OpCode code = (result) ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0;
             processor.Emit(code);
@@ -281,7 +343,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a debug warning and returns the starting instruction.
         /// </summary>
         /// <param name="processor"></param>
-        internal static List<Instruction> CreateDebugWarningInstructions(ILProcessor processor, string message)
+        internal List<Instruction> CreateDebugWarningInstructions(ILProcessor processor, string message)
         {
             List<Instruction> instructions = new List<Instruction>();
             instructions.Add(processor.Create(OpCodes.Ldstr, message));
@@ -293,11 +355,11 @@ namespace FishNet.CodeGenerating.Helping
         ///// Creates a debug warning appends the instructions.
         ///// </summary>
         ///// <param name="processor"></param>
-        //internal static void CreateDebugWarning(ILProcessor processor, FieldDefinition fieldDef)
+        //internal void CreateDebugWarning(ILProcessor processor, FieldDefinition fieldDef)
         //{
         //    processor.Emit(OpCodes.Ldfld, fieldDef); 
         //    TypeDefinition td = fieldDef.FieldType.Resolve();
-        //    _moduleDef.ImportReference(td);
+        //    CodegenSession.Module.ImportReference(td);
         //    processor.Emit(OpCodes.Box, td);
         //    processor.Emit(OpCodes.Call, Debug_LogWarning_MethodRef);
         //}
@@ -307,7 +369,7 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a debug warning appends the instructions.
         /// </summary>
         /// <param name="processor"></param>
-        internal static void CreateDebugWarning(ILProcessor processor, string message)
+        internal void CreateDebugWarning(ILProcessor processor, string message)
         {
             processor.Emit(OpCodes.Ldstr, message);
             processor.Emit(OpCodes.Call, Debug_LogWarning_MethodRef);
@@ -320,7 +382,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal static ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeDefinition parameterTypeDef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
         {
             TypeReference typeRef = methodDef.Module.ImportReference(parameterTypeDef);
             return CreateParameter(methodDef, typeRef, name, attributes);
@@ -331,7 +393,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal static ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, TypeReference parameterTypeRef, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
         {
             ParameterDefinition parameterDef = new ParameterDefinition(name, attributes, parameterTypeRef);
             methodDef.Parameters.Add(parameterDef);
@@ -343,7 +405,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="parameterTypeRef"></param>
         /// <returns></returns>
-        internal static ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
+        internal ParameterDefinition CreateParameter(MethodDefinition methodDef, Type parameterType, string name = "", ParameterAttributes attributes = ParameterAttributes.None)
         {
             return CreateParameter(methodDef, GetTypeReference(parameterType), name, attributes);
         }
@@ -353,7 +415,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="variableTypeRef"></param>
         /// <returns></returns>
-        internal static VariableDefinition CreateVariable(MethodDefinition methodDef, TypeReference variableTypeRef)
+        internal VariableDefinition CreateVariable(MethodDefinition methodDef, TypeReference variableTypeRef)
         {
             VariableDefinition variableDef = new VariableDefinition(variableTypeRef);
             methodDef.Body.Variables.Add(variableDef);
@@ -365,7 +427,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="methodDef"></param>
         /// <param name="variableTypeRef"></param>
         /// <returns></returns>
-        internal static VariableDefinition CreateVariable(MethodDefinition methodDef, Type variableType)
+        internal VariableDefinition CreateVariable(MethodDefinition methodDef, Type variableType)
         {
             return CreateVariable(methodDef, GetTypeReference(variableType));
         }
@@ -378,7 +440,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="typeDef"></param>
-        internal static void SetVariableDefinitionFromObject(ILProcessor processor, VariableDefinition variableDef, TypeDefinition typeDef, List<DiagnosticMessage> diagnostics)
+        internal void SetVariableDefinitionFromObject(ILProcessor processor, VariableDefinition variableDef, TypeDefinition typeDef)
         {
             TypeReference type = variableDef.VariableType;
             if (type.IsValueType)
@@ -400,7 +462,7 @@ namespace FishNet.CodeGenerating.Helping
                 MethodDefinition constructorMethodDef = type.ResolveDefaultPublicConstructor();
                 if (constructorMethodDef == null)
                 {
-                    diagnostics.AddError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");
+                    CodegenSession.Diagnostics.AddError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");
                     return;
                 }
 
@@ -416,7 +478,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="value"></param>
-        internal static void SetVariableDefinitionFromInt(ILProcessor processor, VariableDefinition variableDef, int value)
+        internal void SetVariableDefinitionFromInt(ILProcessor processor, VariableDefinition variableDef, int value)
         {
             processor.Emit(OpCodes.Ldc_I4, value);
             processor.Emit(OpCodes.Stloc, variableDef);
@@ -427,7 +489,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="variableDef"></param>
         /// <param name="value"></param>
-        internal static void SetVariableDefinitionFromParameter(ILProcessor processor, VariableDefinition variableDef, ParameterDefinition value)
+        internal void SetVariableDefinitionFromParameter(ILProcessor processor, VariableDefinition variableDef, ParameterDefinition value)
         {
             processor.Emit(OpCodes.Ldarg, value);
             processor.Emit(OpCodes.Stloc, variableDef);
@@ -440,7 +502,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="instruction"></param>
         /// <param name="calledMethod"></param>
         /// <returns></returns>
-        internal static bool IsCallToMethod(Instruction instruction, out MethodDefinition calledMethod)
+        internal bool IsCallToMethod(Instruction instruction, out MethodDefinition calledMethod)
         {
             if (instruction.OpCode == OpCodes.Call && instruction.Operand is MethodDefinition method)
             {
@@ -461,11 +523,11 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="typeRef"></param>
         /// <param name="create">True to create if missing.</param>
         /// <returns></returns>
-        internal static bool HasSerializerAndDeserializer(TypeReference typeRef, bool create, List<DiagnosticMessage> diagnostics)
+        internal bool HasSerializerAndDeserializer(TypeReference typeRef, bool create)
         {
             //Can be serialized/deserialized.
-            bool hasWriter = WriterHelper.HasSerializer(typeRef, diagnostics, create);
-            bool hasReader = ReaderHelper.HasDeserializer(typeRef, diagnostics, create);
+            bool hasWriter = CodegenSession.WriterHelper.HasSerializer(typeRef, create);
+            bool hasReader = CodegenSession.ReaderHelper.HasDeserializer(typeRef, create);
 
             return (hasWriter && hasReader);
         }

@@ -1,4 +1,3 @@
-using FishNet.Object;
 using UnityEngine;
 
 public class ItemDrop : Interactable
@@ -21,18 +20,14 @@ public class ItemDrop : Interactable
             InteractText = ItemValue.Item.name;
     }
 
-    protected override void OnTriggerEnter2D(Collider2D other)
+    public override void Interact(Player player)
     {
-        base.OnTriggerEnter2D(other);
+        if (player == null) return;
+        if (player.Inventory == null) return;
 
-        //if (!IsServer) return;
-        if (other.CompareTag("Player") && !other.isTrigger)
+        if (player.Inventory.AddItem(new NetItemValue(ItemValue)))
         {
-            //PlayerInventory inv = other.GetComponent<PlayerInventory>();
-            //if (inv && inv.AddItem(new NetItemValue(ItemValue)))
-            //{
-            //    Despawn();
-            //}
+            Despawn();
         }
     }
 

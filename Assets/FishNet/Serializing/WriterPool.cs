@@ -1,5 +1,5 @@
+using FishNet.Serializing.Helping;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace FishNet.Serializing
@@ -7,6 +7,7 @@ namespace FishNet.Serializing
     /// <summary>
     /// NetworkWriter to be used with <see cref="WriterPool">NetworkWriterPool</see>
     /// </summary>
+    [CodegenIncludeInternal]
     public sealed class PooledWriter : Writer, IDisposable
     {
         public void Dispose() => WriterPool.Recycle(this);
@@ -16,6 +17,7 @@ namespace FishNet.Serializing
     /// Pool of NetworkWriters
     /// <para>Use this pool instead of <see cref="Writer">NetworkWriter</see> to reduce memory allocation</para>
     /// </summary>
+    [CodegenIncludeInternal]
     public static class WriterPool
     {
         #region Private.

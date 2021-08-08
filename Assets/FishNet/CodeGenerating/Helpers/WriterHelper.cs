@@ -8,24 +8,21 @@ using FishNet.Object;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using FishNet.Serializing.Helping;
 using UnityEngine;
+using FishNet.CodeGenerating.ILCore;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    internal static class WriterHelper
+    internal class WriterHelper
     {
         #region Reflection references.
-        private static MethodReference WriterPool_GetWriter_MethodRef;
-        private static MethodReference Writer_WritePackedWhole_MethodRef;
-        internal static TypeReference PooledWriter_TypeRef;
-        internal static readonly Dictionary<TypeReference, MethodReference> _instancedWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
-        private static readonly Dictionary<TypeReference, MethodReference> _staticWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
-        private static HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
-        private static MethodReference PooledWriter_Dispose_MethodRef;
-        internal static TypeReference NetworkBehaviour_TypeRef;
-        #endregion
-
-        #region Misc.
-        private static ModuleDefinition _moduleDef;
+        private MethodReference WriterPool_GetWriter_MethodRef;
+        private MethodReference Writer_WritePackedWhole_MethodRef;
+        internal TypeReference PooledWriter_TypeRef;
+        internal readonly Dictionary<TypeReference, MethodReference> _instancedWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
+        private readonly Dictionary<TypeReference, MethodReference> _staticWriterMethods = new Dictionary<TypeReference, MethodReference>(new TypeReferenceComparer());
+        private HashSet<TypeReference> _autoPackedMethods = new HashSet<TypeReference>(new TypeReferenceComparer());
+        private MethodReference PooledWriter_Dispose_MethodRef;
+        internal TypeReference NetworkBehaviour_TypeRef;
         #endregion
 
         #region Const.
@@ -37,21 +34,17 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal static bool ImportReferences(ModuleDefinition moduleDef, List<DiagnosticMessage> diagnostics)
+        internal bool ImportReferences()
         {
-            _autoPackedMethods.Clear();
-            ClearWriterMethods();
-
-            _moduleDef = moduleDef;
-            PooledWriter_TypeRef = moduleDef.ImportReference(typeof(PooledWriter));
-            NetworkBehaviour_TypeRef = moduleDef.ImportReference(typeof(NetworkBehaviour));
+            PooledWriter_TypeRef = CodegenSession.Module.ImportReference(typeof(PooledWriter));
+            NetworkBehaviour_TypeRef = CodegenSession.Module.ImportReference(typeof(NetworkBehaviour));
 
             //WriterPool.GetWriter
             Type writerPoolType = typeof(WriterPool);
             foreach (var methodInfo in writerPoolType.GetMethods())
             {
                 if (methodInfo.Name == nameof(WriterPool.GetWriter))
-                    WriterPool_GetWriter_MethodRef = moduleDef.ImportReference(methodInfo);
+                    WriterPool_GetWriter_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             Type pooledWriterType = typeof(PooledWriter);
@@ -61,29 +54,18 @@ namespace FishNet.CodeGenerating.Helping
                 //Write.Dispose.
                 if (methodInfo.Name == nameof(PooledWriter.Dispose))
                 {
-                    PooledWriter_Dispose_MethodRef = moduleDef.ImportReference(methodInfo);
+                    PooledWriter_Dispose_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                     continue;
                 }
                 //WritePackedWhole.
                 if (methodInfo.Name == nameof(PooledWriter.WritePackedWhole))
                 {
-                    Writer_WritePackedWhole_MethodRef = moduleDef.ImportReference(methodInfo);
+                    Writer_WritePackedWhole_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                     continue;
                 }
 
-                //Custom attribute to specify certain methods to ignore.
-                bool ignored = false;
-                foreach (CustomAttributeData item in methodInfo.CustomAttributes)
-                {
-                    if (item.AttributeType == typeof(CodegenIgnoreAttribute))
-                    {
-                        ignored = true;
-                        break;
-                    }
-                }
-                if (ignored)
+                if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
                     continue;
-
                 //Generic methods are not supported.
                 if (methodInfo.IsGenericMethod)
                     continue;
@@ -114,9 +96,9 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the first parameter in the write method.
                  * The first parameter will always be the type written. */
-                TypeReference typeRef = moduleDef.ImportReference(parameterInfos[0].ParameterType);
+                TypeReference typeRef = CodegenSession.Module.ImportReference(parameterInfos[0].ParameterType);
                 /* If here all checks pass. */
-                MethodReference methodRef = moduleDef.ImportReference(methodInfo);
+                MethodReference methodRef = CodegenSession.Module.ImportReference(methodInfo);
                 AddWriterMethod(typeRef, methodRef, true, true);
                 if (autoPackMethod)
                     _autoPackedMethods.Add(typeRef);
@@ -125,19 +107,8 @@ namespace FishNet.CodeGenerating.Helping
             Type writerExtensionsType = typeof(WriterExtensions);
             foreach (MethodInfo methodInfo in writerExtensionsType.GetMethods())
             {
-                //Custom attribute to specify certain methods to ignore.
-                bool ignored = false;
-                foreach (CustomAttributeData item in methodInfo.CustomAttributes)
-                {
-                    if (item.AttributeType == typeof(CodegenIgnoreAttribute))
-                    {
-                        ignored = true;
-                        break;
-                    }
-                }
-                if (ignored)
+                if (CodegenSession.GeneralHelper.IgnoreMethod(methodInfo))
                     continue;
-
                 //Generic methods are not supported.
                 if (methodInfo.IsGenericMethod)
                     continue;
@@ -171,9 +142,9 @@ namespace FishNet.CodeGenerating.Helping
 
                 /* TypeReference for the second parameter in the write method.
                  * The first parameter will always be the type written. */
-                TypeReference typeRef = moduleDef.ImportReference(parameterInfos[1].ParameterType);
+                TypeReference typeRef = CodegenSession.Module.ImportReference(parameterInfos[1].ParameterType);
                 /* If here all checks pass. */
-                MethodReference methodRef = moduleDef.ImportReference(methodInfo);
+                MethodReference methodRef = CodegenSession.Module.ImportReference(methodInfo);
                 AddWriterMethod(typeRef, methodRef, false, true);
             }
 
@@ -183,11 +154,27 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates generic write delegates for all currently known write types.
         /// </summary>
-        internal static void CreateGenericDelegates(List<DiagnosticMessage> diagnostics)
+        internal bool CreateGenericDelegates()
         {
+            bool modified = false;
+
+            bool fishNetAssembly = FishNetILPP.IsFishNetAssembly();
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticWriterMethods)
-                GenericWriterHelper.CreateWriteDelegate(item.Value, diagnostics);
+            {
+                /* If the assembly delegates are being written for isn't FishNet core
+                * (eg: CSharp, or even FishNet.Components, then only write delegate
+                * if the method is not part of the FishNet assembly. This ensures that
+                * only the FishNet GeneratedReadersAndWritters will register FishNet built
+                * in serializers. */
+                if (!fishNetAssembly && FishNetILPP.IsFishNetAssembly(item.Value.Resolve().Module))
+                    continue;
+
+                CodegenSession.GenericWriterHelper.CreateWriteDelegate(item.Value);
+                modified = true;
+            }
+
+            return modified;
         }
 
         /// <summary>
@@ -195,16 +182,16 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static bool HasSerializer(TypeReference typeRef, List<DiagnosticMessage> diagnostics, bool createMissing)
+        internal bool HasSerializer(TypeReference typeRef,  bool createMissing)
         {
             bool result = (GetInstancedWriteMethodReference(typeRef) != null) ||
                 (GetStaticWriteMethodReference(typeRef) != null);
 
             if (!result && createMissing)
             {
-                if (!GeneralHelper.HasNonSerializableAttribute(typeRef.Resolve()))
+                if (!CodegenSession.GeneralHelper.HasNonSerializableAttribute(typeRef.Resolve()))
                 {
-                    MethodReference methodRef = WriterGenerator.CreateWriter(typeRef, diagnostics);
+                    MethodReference methodRef = CodegenSession.WriterGenerator.CreateWriter(typeRef);
                     result = (methodRef != null);
                 }
             }
@@ -219,7 +206,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static MethodReference GetInstancedWriteMethodReference(TypeReference typeRef)
+        internal MethodReference GetInstancedWriteMethodReference(TypeReference typeRef)
         {
             _instancedWriterMethods.TryGetValue(typeRef, out MethodReference methodRef);
             return methodRef;
@@ -229,7 +216,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static MethodReference GetStaticWriteMethodReference(TypeReference typeRef)
+        internal MethodReference GetStaticWriteMethodReference(TypeReference typeRef)
         {
             _staticWriterMethods.TryGetValue(typeRef, out MethodReference methodRef);
             return methodRef;
@@ -240,7 +227,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="typeRef"></param>
         /// <param name="favorInstanced"></param>
         /// <returns></returns>
-        internal static MethodReference GetFavoredWriteMethodReference(TypeReference typeRef, bool favorInstanced)
+        internal MethodReference GetFavoredWriteMethodReference(TypeReference typeRef, bool favorInstanced)
         {
             MethodReference result;
             if (favorInstanced)
@@ -263,14 +250,14 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static MethodReference GetOrCreateFavoredWriteMethodReference(TypeReference typeRef, bool favorInstanced, List<DiagnosticMessage> diagnostics)
+        internal MethodReference GetOrCreateFavoredWriteMethodReference(TypeReference typeRef, bool favorInstanced)
         {
             //Try to get existing writer, if not present make one.
             MethodReference writeMethodRef = GetFavoredWriteMethodReference(typeRef, favorInstanced);
             if (writeMethodRef == null)
-                writeMethodRef = WriterGenerator.CreateWriter(typeRef, diagnostics);
+                writeMethodRef = CodegenSession.WriterGenerator.CreateWriter(typeRef);
             if (writeMethodRef == null)
-                diagnostics.AddError($"Could not create serializer for {typeRef.FullName}.");
+                CodegenSession.Diagnostics.AddError($"Could not create serializer for {typeRef.FullName}.");
 
             return writeMethodRef;
         }
@@ -282,24 +269,15 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="typeRef"></param>
         /// <param name="methodRef"></param>
         /// <param name="useAdd"></param>
-        internal static void AddWriterMethod(TypeReference typeRef, MethodReference methodRef, bool instanced, bool useAdd)
+        internal void AddWriterMethod(TypeReference typeRef, MethodReference methodRef, bool instanced, bool useAdd)
         {
             Dictionary<TypeReference, MethodReference> dict = (instanced) ?
-                _instancedWriterMethods : _staticWriterMethods;
+            _instancedWriterMethods : _staticWriterMethods;
 
             if (useAdd)
                 dict.Add(typeRef, methodRef);
             else
                 dict[typeRef] = methodRef;
-        }
-
-        /// <summary>
-        /// Clears cached writer methods.
-        /// </summary>
-        private static void ClearWriterMethods()
-        {
-            _instancedWriterMethods.Clear();
-            _staticWriterMethods.Clear();
         }
 
         /// <summary>
@@ -309,9 +287,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        internal static VariableDefinition CreatePooledWriter(ILProcessor processor, MethodDefinition methodDef)
+        internal VariableDefinition CreatePooledWriter(ILProcessor processor, MethodDefinition methodDef)
         {
-            VariableDefinition pooledWriterVariableDef = GeneralHelper.CreateVariable(methodDef, PooledWriter_TypeRef);
+            VariableDefinition pooledWriterVariableDef = CodegenSession.GeneralHelper.CreateVariable(methodDef, PooledWriter_TypeRef);
             //Get a pooled writer from WriterPool and assign it to added PooledWriter.
             processor.Emit(OpCodes.Call, WriterPool_GetWriter_MethodRef);
             processor.Emit(OpCodes.Stloc, pooledWriterVariableDef);
@@ -324,7 +302,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="writerDefinition"></param>
-        internal static void DisposePooledWriter(ILProcessor processor, VariableDefinition writerDefinition)
+        internal void DisposePooledWriter(ILProcessor processor, VariableDefinition writerDefinition)
         {
             processor.Emit(OpCodes.Ldloc, writerDefinition);
             processor.Emit(OpCodes.Callvirt, PooledWriter_Dispose_MethodRef);
@@ -335,7 +313,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="typeRef"></param>
         /// <returns></returns>
-        internal static bool IsAutoPackedType(TypeReference typeRef)
+        internal bool IsAutoPackedType(TypeReference typeRef)
         {
             return _autoPackedMethods.Contains(typeRef);
         }
@@ -343,7 +321,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates a null check on the second argument using a boolean.
         /// </summary>
-        internal static void CreateRetOnNull(ILProcessor processor, ParameterDefinition writerParameterDef, ParameterDefinition checkedParameterDef, bool useBool, List<DiagnosticMessage> diagnostics)
+        internal void CreateRetOnNull(ILProcessor processor, ParameterDefinition writerParameterDef, ParameterDefinition checkedParameterDef, bool useBool)
         {
             Instruction endIf = processor.Create(OpCodes.Nop);
             //If (value) jmp to endIf.
@@ -366,11 +344,11 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="value"></param>
-        internal static void CreateWritePackedWhole(ILProcessor processor, ParameterDefinition writerParameterDef, int value)
+        internal void CreateWritePackedWhole(ILProcessor processor, ParameterDefinition writerParameterDef, int value)
         {
             //Create local int and set it to value.
-            VariableDefinition intVariableDef = GeneralHelper.CreateVariable(processor.Body.Method, typeof(int));
-            GeneralHelper.SetVariableDefinitionFromInt(processor, intVariableDef, value);
+            VariableDefinition intVariableDef = CodegenSession.GeneralHelper.CreateVariable(processor.Body.Method, typeof(int));
+            CodegenSession.GeneralHelper.SetVariableDefinitionFromInt(processor, intVariableDef, value);
             //Writer.
             processor.Emit(OpCodes.Ldarg, writerParameterDef);
             //Writer.WritePackedWhole(value).
@@ -383,7 +361,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="value"></param>
-        internal static void CreateWritePackedWhole(ILProcessor processor, ParameterDefinition writerParameterDef, VariableDefinition value)
+        internal void CreateWritePackedWhole(ILProcessor processor, ParameterDefinition writerParameterDef, VariableDefinition value)
         {
             //Writer.
             processor.Emit(OpCodes.Ldarg, writerParameterDef);
@@ -400,9 +378,9 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="writerParameterDef"></param>
         /// <param name="value"></param>
-        internal static void CreateWriteBool(ILProcessor processor, ParameterDefinition writerParameterDef, bool value)
+        internal void CreateWriteBool(ILProcessor processor, ParameterDefinition writerParameterDef, bool value)
         {
-            MethodReference writeBoolMethodRef = GetFavoredWriteMethodReference(GeneralHelper.GetTypeReference(typeof(bool)), true);
+            MethodReference writeBoolMethodRef = GetFavoredWriteMethodReference(CodegenSession.GeneralHelper.GetTypeReference(typeof(bool)), true);
             processor.Emit(OpCodes.Ldarg, writerParameterDef);
             int intValue = (value) ? 1 : 0;
             processor.Emit(OpCodes.Ldc_I4, intValue);
@@ -416,7 +394,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="processor"></param>
         /// <param name="writerDef"></param>
         /// <param name="valueParameterDef"></param>
-        internal static void CreateWrite(ILProcessor processor, object writerDef, ParameterDefinition valueParameterDef, MethodReference writeMethodRef, List<DiagnosticMessage> diagnostics)
+        internal void CreateWrite(ILProcessor processor, object writerDef, ParameterDefinition valueParameterDef, MethodReference writeMethodRef)
         {
             if (writeMethodRef != null)
             {
@@ -430,48 +408,48 @@ namespace FishNet.CodeGenerating.Helping
                 }
                 else
                 {
-                    diagnostics.AddError($"{writerDef.GetType().FullName} is not a valid writerDef. Type must be VariableDefinition or ParameterDefinition.");
+                    CodegenSession.Diagnostics.AddError($"{writerDef.GetType().FullName} is not a valid writerDef. Type must be VariableDefinition or ParameterDefinition.");
                     return;
                 }
                 processor.Emit(OpCodes.Ldarg, valueParameterDef);
                 //If an auto pack method then insert default value.
                 if (_autoPackedMethods.Contains(valueParameterDef.ParameterType))
                 {
-                    AutoPackType packType = GeneralHelper.GetDefaultAutoPackType(valueParameterDef.ParameterType);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(valueParameterDef.ParameterType);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 processor.Emit(OpCodes.Call, writeMethodRef);
             }
             else
             {
-                diagnostics.AddError($"Writer not found for {valueParameterDef.ParameterType.FullName}.");
+                CodegenSession.Diagnostics.AddError($"Writer not found for {valueParameterDef.ParameterType.FullName}.");
             }
         }
         /// <summary>
-        /// Creates a Write call to a static writer.
+        /// Creates a Write call to a writer.
         /// EG: StaticClass.WriteBool(xxxxx);
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="fieldDef"></param>
-        internal static void CreateWrite(ILProcessor processor, ParameterDefinition writerVariableDef, FieldDefinition fieldDef, MethodReference writeMethodRef, List<DiagnosticMessage> diagnostics)
+        internal void CreateWrite(ILProcessor processor, ParameterDefinition writerVariableDef, FieldDefinition fieldDef, MethodReference writeMethodRef)
         {
             if (writeMethodRef != null)
             {
-                FieldReference fieldRef = GeneralHelper.GetFieldReference(fieldDef);
+                FieldReference fieldRef = CodegenSession.GeneralHelper.GetFieldReference(fieldDef);
                 processor.Emit(OpCodes.Ldarg_0); //this.
                 processor.Emit(OpCodes.Ldarg, writerVariableDef);
                 processor.Emit(OpCodes.Ldfld, fieldRef);
                 //If an auto pack method then insert default value.
                 if (_autoPackedMethods.Contains(fieldDef.FieldType))
                 {
-                    AutoPackType packType = GeneralHelper.GetDefaultAutoPackType(fieldDef.FieldType);
+                    AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(fieldDef.FieldType);
                     processor.Emit(OpCodes.Ldc_I4, (int)packType);
                 }
                 processor.Emit(OpCodes.Call, writeMethodRef);
             }
             else
             {
-                diagnostics.AddError($"Writer not found for {fieldDef.FieldType.FullName}.");
+                CodegenSession.Diagnostics.AddError($"Writer not found for {fieldDef.FieldType.FullName}.");
             }
         }
 

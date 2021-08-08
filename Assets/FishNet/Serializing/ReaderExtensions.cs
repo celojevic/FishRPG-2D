@@ -14,12 +14,12 @@ namespace FishNet.Serializing
     {
 
         public static byte ReadByte(this Reader reader) => reader.ReadByte();
-        [CodegenIgnore]
+        [CodegenExclude]
         public static void ReadBytes(this Reader reader, ref byte[] target, int count) => reader.ReadBytes(ref target, count);
         public static byte[] ReadBytesAndSizeAllocated(this Reader reader) => reader.ReadBytesAndSizeAllocated();
-        [CodegenIgnore]
+        [CodegenExclude]
         public static int ReadBytesAndSize(this Reader reader, ref byte[] target) => reader.ReadBytesAndSize(ref target);
-        [CodegenIgnore]
+        [CodegenExclude]
         public static ArraySegment<byte> ReadArraySegment(this Reader reader, int count) => reader.ReadArraySegment(count);
         public static ArraySegment<byte> ReadArraySegmentAndSize(this Reader reader) => reader.ReadArraySegmentAndSize();
         public static sbyte ReadSByte(this Reader reader) => reader.ReadSByte();
@@ -48,7 +48,7 @@ namespace FishNet.Serializing
         public static Ray ReadRay(this Reader reader) => reader.ReadRay();
         public static Ray2D ReadRay2D(this Reader reader) => reader.ReadRay2D();
         public static Matrix4x4 ReadMatrix4x4(this Reader reader) => reader.ReadMatrix4x4();
-        [CodegenIgnore]
+        [CodegenExclude]
         public static byte[] ReadBytesAllocated(this Reader reader, int count) => reader.ReadBytesAllocated(count);
         public static System.Guid ReadGuid(this Reader reader) => reader.ReadGuid();
         public static GameObject ReadGameObject(this Reader reader) => reader.ReadGameObject();
@@ -56,7 +56,7 @@ namespace FishNet.Serializing
         public static NetworkBehaviour ReadNetworkBehaviour(this Reader reader) => reader.ReadNetworkBehaviour();
         public static Channel ReadChannel(this Reader reader) => reader.ReadChannel();
         public static NetworkConnection ReadNetworkConnection(this Reader reader) => reader.ReadNetworkConnection();
-        [CodegenIgnore]
+        [CodegenExclude]
         public static T Read<T>(this Reader reader) => reader.Read<T>();
     }
 }

@@ -1,39 +1,37 @@
-﻿
-using FishNet.CodeGenerating.Helping;
+﻿using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
-using FishNet.Object;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
-    internal static class NetworkBehaviourProcessor
+    internal class NetworkBehaviourProcessor
     {
         #region Misc.
         /// <summary>
         /// Methods modified or iterated during weaving.
         /// </summary>
-        internal static List<MethodDefinition> ModifiedMethodDefinitions = new List<MethodDefinition>();
+        internal List<MethodDefinition> ModifiedMethodDefinitions = new List<MethodDefinition>();
         #endregion
 
         #region Const.
         internal const string NETWORKINITIALIZE_INTERNAL_NAME = "NetworkInitialize___Internal";
-        private static MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
+        private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion
 
-        internal static void Process(ModuleDefinition moduleDef, TypeDefinition firstTypeDef, TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks, List<DiagnosticMessage> diagnostics)
+        internal bool Process( TypeDefinition firstTypeDef, TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks)
         {
+            bool modified = false;
+
             //Disallow nested network behaviours.
             if (typeDef.NestedTypes
-                .Where(t => t.IsSubclassOf(ObjectHelper.NetworkBehaviour_FullName))
+                .Where(t => t.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
                 .ToList().Count > 0)
             {
-                diagnostics.AddError($"{typeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
-                return;
+                CodegenSession.Diagnostics.AddError($"{typeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
+                return modified;
             }
 
             //First typeDef to process. Will always be child most.
@@ -41,25 +39,27 @@ namespace FishNet.CodeGenerating.Processing
             {
                 firstTypeDef = typeDef;
 
-                if (!MakeAwakeMethodsPublicVirtual(typeDef, diagnostics))
-                    return;
+                if (!MakeAwakeMethodsPublicVirtual(typeDef))
+                    return modified;
                 MethodDefinition childMostAwakeMethodDef = GetChildMostAwakeMethodDefinition(typeDef);
                 List<MethodDefinition> networkInitializeMethodDefs = CreateNetworkInitializeMethodDefinitions(typeDef);
                 CreateNetworkInitializeBaseCalls(typeDef, networkInitializeMethodDefs, 0);
                 CreateFirstNetworkInitializeCall(typeDef, childMostAwakeMethodDef, networkInitializeMethodDefs[0]);
             }
 
-            NetworkBehaviourQolAttributeProcessor.Process(typeDef, diagnostics);
-            NetworkBehaviourRpcProcessor.Process(typeDef, ref allRpcCount, diagnostics);
-            NetworkBehaviourCallbackProcessor.Process(firstTypeDef, typeDef, allProcessedCallbacks, diagnostics);
-            NetworkBehaviourSyncProcessor.Process(moduleDef, typeDef, allProcessedSyncs, diagnostics);
+            modified |= CodegenSession.NetworkBehaviourQolAttributeProcessor.Process(typeDef);
+            modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(typeDef, ref allRpcCount);
+            modified |= CodegenSession.NetworkBehaviourCallbackProcessor.Process(firstTypeDef, typeDef, allProcessedCallbacks);
+            modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(typeDef, allProcessedSyncs);
 
             //Also process base types.
             if (typeDef.NonNetworkBehaviourBaseType())
-                Process(moduleDef, firstTypeDef, typeDef.BaseType.Resolve(), ref allRpcCount, allProcessedSyncs, allProcessedCallbacks, diagnostics);
+                Process(firstTypeDef, typeDef.BaseType.Resolve(), ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
 
             List<MethodDefinition> modifiableMethods = GetModifiableMethods(typeDef);
-            NetworkBehaviourSyncProcessor.ReplaceGetSets(modifiableMethods, allProcessedSyncs, diagnostics);
+            CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(modifiableMethods, allProcessedSyncs);
+
+            return modified;
         }
 
 
@@ -68,7 +68,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        private static MethodDefinition GetChildMostAwakeMethodDefinition(TypeDefinition typeDef)
+        private MethodDefinition GetChildMostAwakeMethodDefinition(TypeDefinition typeDef)
         {
             while (typeDef != null)
             {
@@ -91,7 +91,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="firstTypeDef"></param>
         /// <returns></returns>
-        private static List<MethodDefinition> CreateNetworkInitializeMethodDefinitions(TypeDefinition firstTypeDef)
+        private List<MethodDefinition> CreateNetworkInitializeMethodDefinitions(TypeDefinition firstTypeDef)
         {
             List<MethodDefinition> methodDefs = new List<MethodDefinition>();
 
@@ -124,7 +124,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="typeDef"></param>
         /// <param name="parentMostAwakeMethodDef"></param>
         /// <returns>True if successful.</returns>
-        private static bool MakeAwakeMethodsPublicVirtual(TypeDefinition typeDef, List<DiagnosticMessage> diagnostics)
+        private bool MakeAwakeMethodsPublicVirtual(TypeDefinition typeDef)
         {
             while (typeDef != null)
             {
@@ -133,7 +133,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     if (tmpMd.ReturnType != typeDef.Module.TypeSystem.Void)
                     {
-                        diagnostics.AddError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
+                        CodegenSession.Diagnostics.AddError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
                     tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
@@ -152,7 +152,7 @@ namespace FishNet.CodeGenerating.Processing
         /// Makes all NetworkInitialize methods within typeDef call their inherited siblings.
         /// </summary>
         /// <param name="typeDef"></param>
-        internal static void CreateNetworkInitializeBaseCalls(TypeDefinition typeDef, List<MethodDefinition> networkInitializeMethodDefs, int lstIndex)
+        internal void CreateNetworkInitializeBaseCalls(TypeDefinition typeDef, List<MethodDefinition> networkInitializeMethodDefs, int lstIndex)
         {
             //On last method, nothing up to call.
             if (lstIndex >= (networkInitializeMethodDefs.Count - 1))
@@ -180,7 +180,7 @@ namespace FishNet.CodeGenerating.Processing
         /// Makes all Awake methods within typeDef and base classes public and virtual.
         /// </summary>
         /// <param name="typeDef"></param>
-        internal static void CreateFirstNetworkInitializeCall(TypeDefinition typeDef, MethodDefinition firstUserAwakeMethodDef, MethodDefinition firstNetworkInitializeMethodDef)
+        internal void CreateFirstNetworkInitializeCall(TypeDefinition typeDef, MethodDefinition firstUserAwakeMethodDef, MethodDefinition firstNetworkInitializeMethodDef)
         {
             ILProcessor processor;
             //Get awake for current method.
@@ -195,10 +195,10 @@ namespace FishNet.CodeGenerating.Processing
                 thisAwakeMethodDef = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES,
                     typeDef.Module.TypeSystem.Void);
                 thisAwakeMethodDef.Body.InitLocals = true;
-                typeDef.Methods.Add(thisAwakeMethodDef);               
+                typeDef.Methods.Add(thisAwakeMethodDef);
 
                 processor = thisAwakeMethodDef.Body.GetILProcessor();
-                processor.Emit(OpCodes.Ret);                                
+                processor.Emit(OpCodes.Ret);
             }
 
             //MethodRefs for networkinitialize and awake.
@@ -229,7 +229,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates a call to NetworkBehaviour to register RPC count.
         /// </summary>
-        internal static void CreateRegisterRpcCount(TypeDefinition typeDef, int allRpcCount, List<DiagnosticMessage> diagnostics)
+        internal void CreateRegisterRpcCount(TypeDefinition typeDef, int allRpcCount)
         {
             MethodDefinition methodDef = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
 
@@ -239,7 +239,7 @@ namespace FishNet.CodeGenerating.Processing
             List<Instruction> instructions = new List<Instruction>();
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)allRpcCount));
-            instructions.Add(processor.Create(OpCodes.Call, ObjectHelper.NetworkBehaviour_SetRpcMethodCountInternal_MethodRef));
+            instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetRpcMethodCountInternal_MethodRef));
 
 
             //SetGivenName debug.
@@ -261,7 +261,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        private static List<MethodDefinition> GetModifiableMethods(TypeDefinition typeDef)
+        private List<MethodDefinition> GetModifiableMethods(TypeDefinition typeDef)
         {
             List<MethodDefinition> results = new List<MethodDefinition>();
             //Typical methods.
@@ -280,7 +280,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (propertyDef.GetMethod != null)
                     results.Add(propertyDef.GetMethod);
                 if (propertyDef.SetMethod != null)
-                    results.Add(propertyDef.SetMethod);                
+                    results.Add(propertyDef.SetMethod);
             }
 
             return results;

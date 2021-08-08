@@ -8,9 +8,9 @@ namespace FishNet.Component.Transforming
     /// Janky NetworkTransform. This is only for testing and will be replaced prior to release.
     /// </summary>   
     public class NetworkTransform : NetworkBehaviour
-    {
+    { 
         [SerializeField]
-        private bool _clientAuthoritative = true;
+        private bool _clientAuthoritative = true; 
         private const float UPDATE_RATE = 0.02f;
         private const float INTERPOLATION = 0.025f;
 

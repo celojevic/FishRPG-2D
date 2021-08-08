@@ -5,11 +5,10 @@ using FishNet.Serializing;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
 
 namespace FishNet.CodeGenerating.Processing
 {
-    internal static class CustomSerializerProcessor
+    internal class CustomSerializerProcessor
     {
 
         #region Types.
@@ -22,8 +21,10 @@ namespace FishNet.CodeGenerating.Processing
 
         #endregion
 
-        internal static void CreateDelegates(TypeDefinition typeDef, ModuleDefinition moduleDef, List<DiagnosticMessage> diagnostics)
+        internal bool CreateDelegates(TypeDefinition typeDef)
         {
+            bool modified = false;
+
             /* Find all declared methods and register delegates to them.
              * After they are all registered create any custom writers
              * needed to complete the declared methods. It's important to
@@ -31,20 +32,24 @@ namespace FishNet.CodeGenerating.Processing
              * isn't made for a type when the user has already made a declared one. */
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
-                ExtensionType extensionType = GetExtensionType(methodDef, diagnostics);
+                ExtensionType extensionType = GetExtensionType(methodDef);
                 if (extensionType == ExtensionType.None)
                     continue;
 
-                MethodReference methodRef = moduleDef.ImportReference(methodDef);
+                MethodReference methodRef = CodegenSession.Module.ImportReference(methodDef);
                 if (extensionType == ExtensionType.Write)
                 {
-                    WriterHelper.AddWriterMethod(methodRef.Parameters[1].ParameterType, methodRef, false, true);
+                    CodegenSession.WriterHelper.AddWriterMethod(methodRef.Parameters[1].ParameterType, methodRef, false, true);
+                    modified = true;
                 }
                 else if (extensionType == ExtensionType.Read)
                 {
-                    ReaderHelper.AddReaderMethod(methodRef.ReturnType, methodRef, false, true);
+                    CodegenSession.ReaderHelper.AddReaderMethod(methodRef.ReturnType, methodRef, false, true);
+                    modified = true;
                 }
             }
+
+            return modified;
         }
 
         /// <summary>
@@ -52,8 +57,10 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="declaredMethods"></param>
         /// <param name="moduleDef"></param>
-        internal static void CreateSerializers(TypeDefinition typeDef, ModuleDefinition moduleDef, List<DiagnosticMessage> diagnostics)
+        internal bool CreateSerializers(TypeDefinition typeDef)
         {
+            bool modified = false;
+
             List<(MethodDefinition, ExtensionType)> declaredMethods = new List<(MethodDefinition, ExtensionType)>();
             /* Go through all custom serializers again and see if 
              * they use any types that the user didn't make a serializer for
@@ -61,15 +68,18 @@ namespace FishNet.CodeGenerating.Processing
              * for these types. */
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
-                ExtensionType extensionType = GetExtensionType(methodDef, diagnostics);
+                ExtensionType extensionType = GetExtensionType(methodDef);
                 if (extensionType == ExtensionType.None)
                     continue;
 
                 declaredMethods.Add((methodDef, extensionType));
+                modified = true;
             }
             //Now that all declared are loaded see if any of them need generated serializers.
             foreach ((MethodDefinition methodDef, ExtensionType extensionType) in declaredMethods)
-                CreateSerializers(extensionType, moduleDef, methodDef, diagnostics);
+                CreateSerializers(extensionType, methodDef);
+
+            return modified;
         }
 
 
@@ -80,10 +90,10 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="moduleDef"></param>
         /// <param name="methodDef"></param>
         /// <param name="diagnostics"></param>
-        private static void CreateSerializers(ExtensionType extensionType, ModuleDefinition moduleDef, MethodDefinition methodDef, List<DiagnosticMessage> diagnostics)
+        private void CreateSerializers(ExtensionType extensionType, MethodDefinition methodDef)
         {
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)
-                CheckToModifyInstructions(extensionType, moduleDef, methodDef, ref i, diagnostics);
+                CheckToModifyInstructions(extensionType, methodDef, ref i);
         }
 
         /// <summary>
@@ -91,15 +101,15 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
-        private static void CheckToModifyInstructions(ExtensionType extensionType, ModuleDefinition moduleDef, MethodDefinition methodDef, ref int instructionIndex, List<DiagnosticMessage> diagnostics)
+        private void CheckToModifyInstructions(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex)
         {
             Instruction instruction = methodDef.Body.Instructions[instructionIndex];
             //Fields.
             if (instruction.OpCode == OpCodes.Ldsfld || instruction.OpCode == OpCodes.Ldfld)
-                CheckFieldReferenceInstruction(extensionType, moduleDef, methodDef, ref instructionIndex, diagnostics);
+                CheckFieldReferenceInstruction(extensionType, methodDef, ref instructionIndex);
             //Method calls.
             else if (instruction.OpCode == OpCodes.Call || instruction.OpCode == OpCodes.Callvirt)
-                CheckCallInstruction(extensionType, moduleDef, methodDef, ref instructionIndex, (MethodReference)instruction.Operand, diagnostics);
+                CheckCallInstruction(extensionType, methodDef, ref instructionIndex, (MethodReference)instruction.Operand);
         }
 
 
@@ -108,7 +118,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
-        private static void CheckFieldReferenceInstruction(ExtensionType extensionType, ModuleDefinition moduleDef, MethodDefinition methodDef, ref int instructionIndex, List<DiagnosticMessage> diagnostics)
+        private void CheckFieldReferenceInstruction(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex)
         {
             Instruction instruction = methodDef.Body.Instructions[instructionIndex];
             FieldReference field = (FieldReference)instruction.Operand;
@@ -119,7 +129,7 @@ namespace FishNet.CodeGenerating.Processing
                 GenericInstanceType typeGenericInst = (GenericInstanceType)type;
                 TypeReference parameterType = typeGenericInst.GenericArguments[0];
 
-                CreateReaderOrWriter(extensionType, moduleDef, methodDef, ref instructionIndex, parameterType, diagnostics);
+                CreateReaderOrWriter(extensionType, methodDef, ref instructionIndex, parameterType);
             }
         }
 
@@ -132,7 +142,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
         /// <param name="method"></param>
-        private static void CheckCallInstruction(ExtensionType extensionType, ModuleDefinition moduleDef, MethodDefinition methodDef, ref int instructionIndex, MethodReference method, List<DiagnosticMessage> diagnostics)
+        private void CheckCallInstruction(ExtensionType extensionType,  MethodDefinition methodDef, ref int instructionIndex, MethodReference method)
         {
             if (!method.IsGenericInstance)
                 return;
@@ -150,7 +160,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (parameterType.IsGenericParameter)
                     return;
 
-                CreateReaderOrWriter(extensionType, moduleDef, methodDef, ref instructionIndex, parameterType, diagnostics);
+                CreateReaderOrWriter(extensionType, methodDef, ref instructionIndex, parameterType);
             }
         }
 
@@ -162,7 +172,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="methodDef"></param>
         /// <param name="instructionIndex"></param>
         /// <param name="parameterType"></param>
-        private static void CreateReaderOrWriter(ExtensionType extensionType, ModuleDefinition moduleDef, MethodDefinition methodDef, ref int instructionIndex, TypeReference parameterType, List<DiagnosticMessage> diagnostics)
+        private void CreateReaderOrWriter(ExtensionType extensionType, MethodDefinition methodDef, ref int instructionIndex, TypeReference parameterType)
         {
             if (!parameterType.IsGenericParameter && parameterType.CanBeResolved())
             {
@@ -172,7 +182,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     MethodDefinition constructor = typeDefinition.GetMethod(".ctor");
                     //Constructor is inaccessible, cannot create serializer for type.
-                    if (!constructor.IsPublic || !(constructor.IsAssembly && typeDefinition.Module == moduleDef))
+                    if (!constructor.IsPublic || !(constructor.IsAssembly && typeDefinition.Module == CodegenSession.Module))
                         return;
                 }
 
@@ -180,8 +190,8 @@ namespace FishNet.CodeGenerating.Processing
 
                 //Find already existing read or write method.
                 MethodReference createdMethodRef = (extensionType == ExtensionType.Write) ?
-                    WriterHelper.GetFavoredWriteMethodReference(parameterType, true) :
-                    ReaderHelper.GetFavoredReadMethodReference(parameterType, true);
+                    CodegenSession.WriterHelper.GetFavoredWriteMethodReference(parameterType, true) :
+                    CodegenSession.ReaderHelper.GetFavoredReadMethodReference(parameterType, true);
                 //If a created method already exist nothing further is required.
                 if (createdMethodRef != null)
                 {
@@ -193,8 +203,8 @@ namespace FishNet.CodeGenerating.Processing
                 else
                 {
                     createdMethodRef = (extensionType == ExtensionType.Write) ?
-                        WriterGenerator.CreateWriter(parameterType, diagnostics) :
-                        ReaderGenerator.CreateReader(parameterType, diagnostics);
+                        CodegenSession.WriterGenerator.CreateWriter(parameterType) :
+                        CodegenSession.ReaderGenerator.CreateReader(parameterType);
                 }
 
                 //If method was created.
@@ -202,9 +212,9 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     /* If an autopack type then we have to inject the
                      * autopack above the new instruction. */
-                    if (WriterHelper.IsAutoPackedType(parameterType))
+                    if (CodegenSession.WriterHelper.IsAutoPackedType(parameterType))
                     {
-                        AutoPackType packType = GeneralHelper.GetDefaultAutoPackType(parameterType);
+                        AutoPackType packType = CodegenSession.GeneralHelper.GetDefaultAutoPackType(parameterType);
                         Instruction autoPack = processor.Create(OpCodes.Ldc_I4, (int)packType);
                         methodDef.Body.Instructions.Insert(instructionIndex, autoPack);
                         instructionIndex++;
@@ -221,7 +231,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="methodDef"></param>
         /// <returns></returns>
-        private static ExtensionType GetExtensionType(MethodDefinition methodDef, List<DiagnosticMessage> diagnostics)
+        private ExtensionType GetExtensionType(MethodDefinition methodDef)
         {
             bool hasExtensionAttribute = methodDef.HasCustomAttribute<System.Runtime.CompilerServices.ExtensionAttribute>();
             if (!hasExtensionAttribute)
@@ -237,12 +247,12 @@ namespace FishNet.CodeGenerating.Processing
 
             if (write && methodDef.Parameters.Count < 2)
             {
-                diagnostics.AddError($"{methodDef.FullName} must have at least two parameters, the first being PooledWriter, and second value to write.");
+                CodegenSession.Diagnostics.AddError($"{methodDef.FullName} must have at least two parameters, the first being PooledWriter, and second value to write.");
                 return ExtensionType.None;
             }
             else if (!write && methodDef.Parameters.Count < 1)
             {
-                diagnostics.AddError($"{methodDef.FullName} must have at least one parameters, the first being PooledReader.");
+                CodegenSession.Diagnostics.AddError($"{methodDef.FullName} must have at least one parameters, the first being PooledReader.");
                 return ExtensionType.None;
             }
 

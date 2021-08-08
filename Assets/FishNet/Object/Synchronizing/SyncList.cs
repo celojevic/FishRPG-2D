@@ -122,18 +122,6 @@ namespace FishNet.Object.Synchronizing
             this._objects = objects;
         }
 
-
-        /// <summary>
-        /// Initializes the SyncList with settings.
-        /// </summary>
-        /// <param name="writePermissions"></param>
-        /// <param name="readPermissions"></param>
-        /// <param name="tickRate"></param>
-        public void InitializeSyncObjectInstanceInternal(WritePermission writePermissions, ReadPermission readPermissions, float tickRate, Channel channel)
-        {
-            base.InitializeInstanceInternal(writePermissions, readPermissions, tickRate, channel, true);
-        }
-
         /// <summary>
         /// Adds an operation and invokes locally.
         /// </summary>

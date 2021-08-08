@@ -3,24 +3,24 @@ using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
 
 namespace FishNet.CodeGenerating.Processing
 {
-    internal static class NetworkBehaviourQolAttributeProcessor
+    internal class NetworkBehaviourQolAttributeProcessor
     {
 
-        internal static void Process(TypeDefinition typeDef, List<DiagnosticMessage> diagnostics)
+        internal bool Process(TypeDefinition typeDef)
         {
+            bool modified = false;
+
             foreach (MethodDefinition methodDef in typeDef.Methods)
             {
                 //Has RPC attribute, doesn't quality for a quality of life attribute.
-                if (NetworkBehaviourRpcProcessor.GetRpcAttribute(methodDef, out _, diagnostics) != null)
+                if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(methodDef, out _) != null)
                     continue;
 
                 QolAttributeType qolType;
-                CustomAttribute qolAttribute = GetQOLAttribute(methodDef, out qolType, diagnostics);
+                CustomAttribute qolAttribute = GetQOLAttribute(methodDef, out qolType);
                 if (qolAttribute == null)
                     continue;
 
@@ -30,12 +30,15 @@ namespace FishNet.CodeGenerating.Processing
                  * single check is performed here. */
                 if (qolType != QolAttributeType.Server && qolType != QolAttributeType.Client)
                 {
-                    diagnostics.AddError($"QolAttributeType of {qolType.ToString()} is unhandled.");
+                    CodegenSession.Diagnostics.AddError($"QolAttributeType of {qolType.ToString()} is unhandled.");
                     continue;
                 }
 
-                CreateAttributeMethod(methodDef, qolAttribute, qolType, diagnostics);
+                CreateAttributeMethod(methodDef, qolAttribute, qolType);
+                modified = true;
             }
+
+            return modified;
         }
 
         /// <summary>
@@ -44,7 +47,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="methodDef"></param>
         /// <param name="rpcType"></param>
         /// <returns></returns>
-        private static CustomAttribute GetQOLAttribute(MethodDefinition methodDef, out QolAttributeType qolType, List<DiagnosticMessage> diagnostics)
+        private CustomAttribute GetQOLAttribute(MethodDefinition methodDef, out QolAttributeType qolType)
         {
             CustomAttribute foundAttribute = null;
             qolType = QolAttributeType.None;
@@ -53,25 +56,25 @@ namespace FishNet.CodeGenerating.Processing
 
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
-                QolAttributeType thisQolType = AttributeHelper.GetQolAttributeType(customAttribute.AttributeType.FullName);
+                QolAttributeType thisQolType = CodegenSession.AttributeHelper.GetQolAttributeType(customAttribute.AttributeType.FullName);
                 if (thisQolType != QolAttributeType.None)
                 {
                     //A qol attribute already exist.
                     if (foundAttribute != null)
                     {
-                        diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot have multiple quality of life attributes.");
+                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot have multiple quality of life attributes.");
                         error = true;
                     }
                     //Static method.
                     if (methodDef.IsStatic)
                     {
-                        diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
+                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
                         error = true;
                     }
                     //Abstract method.
                     if (methodDef.IsAbstract)
                     {
-                        diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be abstract.");
+                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be abstract.");
                         error = true;
                     }
 
@@ -101,16 +104,16 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="qolAttribute"></param>
         /// <param name="qolType"></param>
         /// <param name="diagnostics"></param>
-        private static void CreateAttributeMethod(MethodDefinition methodDef, CustomAttribute qolAttribute, QolAttributeType qolType, List<DiagnosticMessage> diagnostics)
+        private void CreateAttributeMethod(MethodDefinition methodDef, CustomAttribute qolAttribute, QolAttributeType qolType)
         {
             bool warn = qolAttribute.GetField("Warn", false);
 
             ILProcessor processor = methodDef.Body.GetILProcessor();
 
             if (qolType == QolAttributeType.Client)
-                ObjectHelper.CreateIsClientCheck(processor, methodDef, warn, true);
+                CodegenSession.ObjectHelper.CreateIsClientCheck(processor, methodDef, warn, true);
             else if (qolType == QolAttributeType.Server)
-                ObjectHelper.CreateIsServerCheck(processor, methodDef, warn,  true);
+                CodegenSession.ObjectHelper.CreateIsServerCheck(processor, methodDef, warn,  true);
         }
 
     }

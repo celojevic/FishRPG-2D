@@ -133,11 +133,13 @@ namespace FishNet.Managing.Client.Object
         /// <summary>
         /// Cached NetworkObject.
         /// </summary>
+#pragma warning disable 0649
         public NetworkObject NetworkObject { get; private set; } = null;
         /// <summary>
         /// Reader containing sync values for the network object.
         /// </summary>
         public PooledReader SyncValuesReader { get; private set; } = null;
+#pragma warning restore 0649
         /// <summary>
         /// Initializes for a spawned NetworkObject.
         /// </summary>

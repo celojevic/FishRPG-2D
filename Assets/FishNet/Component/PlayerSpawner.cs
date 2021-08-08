@@ -54,8 +54,9 @@ namespace FishNet.Component.Spawning
         private void OnDestroy()
         {
             if (_networkManager != null)
-                _networkManager.ServerManager.OnClientAuthenticated -= Server_OnClientAuthenticated;
+                _networkManager.SceneManager.OnClientLoadedStartScenes -= SceneManager_OnClientLoadedStartScenes;
         }
+
 
         /// <summary>
         /// Initializes this script for use.
@@ -69,13 +70,13 @@ namespace FishNet.Component.Spawning
                 return;
             }
 
-            _networkManager.ServerManager.OnClientAuthenticated += Server_OnClientAuthenticated;
+            _networkManager.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
         }
 
         /// <summary>
-        /// Called after a client completes authentication.
+        /// Called when a client loads initial scenes after connecting.
         /// </summary>
-        private void Server_OnClientAuthenticated(NetworkConnection conn)
+        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn)
         {
             if (_playerPrefab == null)
             {
@@ -91,6 +92,7 @@ namespace FishNet.Component.Spawning
             _networkManager.ServerManager.Spawn(nob, conn);
             OnSpawned?.Invoke(nob);
         }
+
 
         /// <summary>
         /// Sets a spawn position and rotation.

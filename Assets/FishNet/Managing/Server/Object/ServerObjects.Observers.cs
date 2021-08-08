@@ -6,12 +6,17 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
 using UnityEngine;
+using FishNet.Utility;
 
 namespace FishNet.Managing.Server.Object
 {
     public partial class ServerObjects : ManagedObjects
     {
         #region Private.
+        /// <summary>
+        /// Cache for NetworkConnections.
+        /// </summary>
+        private ListCache<NetworkConnection> _networkConnectionListCache = new ListCache<NetworkConnection>();
         /// <summary>
         /// Cache filled with objects which are being spawned on clients due to an observer change.
         /// </summary>
@@ -257,17 +262,41 @@ namespace FishNet.Managing.Server.Object
         }
 
 
+
         /// <summary>
         /// Rebuilds observers on all connections for a NetworkObject.
         /// </summary>
-        /// <param name="connection"></param>
-        private void RebuildObservers(NetworkObject nob)
+        /// <param name="nob">NetworkObject to rebuild on.</param>
+        internal void RebuildObservers(NetworkObject nob)
+        {
+            RebuildObservers(nob, null);
+        }
+
+        /// <summary>
+        /// Rebuilds observers on all connections for a NetworkObject.
+        /// </summary>
+        /// <param name="networkObject">NetworkObject to rebuild on.</param>
+        /// <param name="connections">Connections to rebuild for. If null networkObject will rebuild for all connections.</param>
+        internal void RebuildObservers(NetworkObject networkObject, List<NetworkConnection> connections)
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             PooledWriter ownerWriter = WriterPool.GetWriter();
 
-            foreach (NetworkConnection connection in NetworkManager.ServerManager.Clients.Values)
+            _networkConnectionListCache.Reset();
+            if (connections == null)
             {
+                foreach (NetworkConnection item in NetworkManager.ServerManager.Clients.Values)
+                    _networkConnectionListCache.AddValue(item);
+            }
+            else
+            {
+                _networkConnectionListCache.AddValues(connections);
+            }
+
+
+            for (int i = 0; i < _networkConnectionListCache.Written; i++)
+            {
+                NetworkConnection conn = _networkConnectionListCache.Collection[i];
                 /* If connection is nobs owner then skip it. Owner will always
                  * have visibility of the object and they will be given
                  * visibility when they gain ownership. By checking here
@@ -287,29 +316,29 @@ namespace FishNet.Managing.Server.Object
                 everyoneWriter.Reset();
                 ownerWriter.Reset();
                 //If observer state changed then write changes.
-                ObserverStateChange osc = nob.RebuildObservers(connection);
+                ObserverStateChange osc = networkObject.RebuildObservers(conn);
                 if (osc == ObserverStateChange.Added)
-                    WriteSpawn(nob, ref everyoneWriter, ref ownerWriter);
+                    WriteSpawn(networkObject, ref everyoneWriter, ref ownerWriter);
                 else if (osc == ObserverStateChange.Removed)
-                    WriteDespawn(nob, ref everyoneWriter);
+                    WriteDespawn(networkObject, ref everyoneWriter);
                 else
                     continue;
 
                 /* Only use ownerWriter if an add, and if owner. Owner
                  * doesn't matter if not being added because no owner specific
                  * information would be included. */
-                PooledWriter writerToUse = (osc == ObserverStateChange.Added && nob.Owner == connection) ?
+                PooledWriter writerToUse = (osc == ObserverStateChange.Added && networkObject.Owner == conn) ?
                     ownerWriter : everyoneWriter;
 
                 if (writerToUse.Length > 0)
                 {
                     NetworkManager.TransportManager.SendToClient(
                         (byte)Channel.Reliable,
-                        writerToUse.GetArraySegment(), connection);
+                        writerToUse.GetArraySegment(), conn);
 
                     //If a spawn is being sent.
                     if (osc == ObserverStateChange.Added)
-                        nob.InvokeOnServerSpawn(connection);
+                        networkObject.InvokeOnServerSpawn(conn);
                 }
 
             }

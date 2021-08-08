@@ -283,6 +283,11 @@ namespace FishNet.Object
             return false;
         }   
 
+
+        public bool SyncTypeEquals<T>(T a, T b)
+        {
+            return EqualityComparer<T>.Default.Equals(a, b);
+        }
         /// <summary>
         /// Resets all SyncVars for this NetworkBehaviour.
         /// </summary>
@@ -322,9 +327,12 @@ namespace FishNet.Object
                         sb.WriteIfChanged(syncTypeWriter);
                     }
 
+
                     writer.WriteBytesAndSize(syncTypeWriter.GetBuffer(), 0, syncTypeWriter.Length);
                 }
             }
+
+            writer.WriteBytesAndSize(new byte[0], 0, 0);
         }
 
 

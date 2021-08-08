@@ -1,7 +1,7 @@
 using FishNet.Object;
 using UnityEngine;
 
-public class Interactable : MonoBehaviour
+public abstract class Interactable : NetworkBehaviour
 {
 
     [Header("Interactable")]
@@ -23,7 +23,6 @@ public class Interactable : MonoBehaviour
         if (!other.CompareTag(_otherTag)) return;
         if (_localPlayerOnly && other.GetComponent<Player>() != UiManager.Player) return;
 
-        Debug.Log("issa plyaer");
         UiInteract.Show(InteractText);
     }
 
@@ -31,5 +30,7 @@ public class Interactable : MonoBehaviour
     {
         UiInteract.Hide();
     }
+
+    public abstract void Interact(Player player);
 
 }

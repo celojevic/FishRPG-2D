@@ -1,5 +1,6 @@
 ﻿using FishNet.Managing;
 using FishNet.Object;
+using FishNet.Serializing.Helping;
 using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
@@ -34,11 +35,14 @@ namespace FishNet.Connection
         /// <summary>
         /// Scenes this connection is in.
         /// </summary>
-        public HashSet<Scene> Scenes = new HashSet<Scene>();
+        public HashSet<Scene> Scenes { get; private set; } = new HashSet<Scene>();
         /// <summary>
         /// True if this connection has loaded default networked scenes.
         /// </summary>
-        internal bool LoadedNetworkedScenes = false;
+        #endregion
+
+        #region Private.
+        private bool _loadedStartScenes = false;
         #endregion
 
         #region Comparers.
@@ -103,6 +107,21 @@ namespace FishNet.Connection
             Objects.Clear();
             Authenticated = false;
             NetworkManager = null;
+            _loadedStartScenes = false;
+            Scenes.Clear();
+        }
+
+        /// <summary>
+        /// Returns if just loaded start scenes and sets them as loaded if not.
+        /// </summary>
+        /// <returns></returns>
+        internal bool SetLoadedStartScenes()
+        {
+            //Result becomes true if not yet loaded start scenes.
+            bool result = (_loadedStartScenes) ? false : true;
+            _loadedStartScenes = true;
+
+            return result;
         }
 
         /// <summary>
@@ -129,6 +148,26 @@ namespace FishNet.Connection
         internal void RemoveObject(NetworkObject nob)
         {
             Objects.Remove(nob);
+        }
+
+        /// <summary>
+        /// Adds a scene to this connections Scenes.
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <returns></returns>
+        internal bool AddToScene(Scene scene)
+        {
+            return Scenes.Add(scene);
+        }
+
+        /// <summary>
+        /// Removes a scene to this connections Scenes.
+        /// </summary>
+        /// <param name="scene"></param>
+        /// <returns></returns>
+        internal bool RemoveFromScene(Scene scene)
+        {
+            return Scenes.Remove(scene);
         }
 
     }

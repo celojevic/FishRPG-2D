@@ -1,5 +1,6 @@
 using FishNet.Managing;
 using FishNet.Managing.Client;
+using FishNet.Managing.Scened;
 using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
@@ -84,6 +85,15 @@ namespace FishNet
             {
                 NetworkManager nm = NetworkManager;
                 return (nm == null) ? null : nm.TimeManager;
+            }
+        }
+
+        public static SceneManager SceneManager
+        {
+            get
+            {
+                NetworkManager nm = NetworkManager;
+                return (nm == null) ? null : nm.SceneManager;
             }
         }
         #endregion

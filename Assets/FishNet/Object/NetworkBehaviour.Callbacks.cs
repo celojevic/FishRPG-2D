@@ -10,34 +10,42 @@ namespace FishNet.Object
         /// <summary>
         /// True if using OnStartServer callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnStartServer = false;
         /// <summary>
         /// True if using OnStopServer callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnStopServer = false;
         /// <summary>
         /// True if using OnOwnershipServer callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnOwnershipServer = false;
         /// <summary>
         /// True if using OnSpawnSent callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnSpawnServer = false;
         /// <summary>
         /// True if using OnDespawnServer callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnDespawnServer = false;
         /// <summary>
         /// True if using OnStartClient callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnStartClient = false;
         /// <summary>
         /// True if using OnStopClient callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnStopClient = false;
         /// <summary>
         /// True if using OnOwnershipClient callback.
         /// </summary>
+        [HideInInspector]
         private bool _usingOnOwnershipClient = false;
         #endregion
 
