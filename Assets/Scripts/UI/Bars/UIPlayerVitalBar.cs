@@ -28,12 +28,18 @@ public class UIPlayerVitalBar : MonoBehaviour
 
     private void UiManager_OnPlayerAssigned()
     {
-        UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
+        if (UiManager.Player != null)
+        {
+            _vital = UiManager.Player.GetVital(_vitalType);
+            _vital.OnVitalChanged += Vital_OnVitalChanged;
 
-        _vital = UiManager.Player.GetVital(_vitalType);
-        _vital.OnVitalChanged += Vital_OnVitalChanged;
-
-        UpdateBar();
+            UpdateBar();
+        }
+        else
+        {
+            UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
+            _vital.OnVitalChanged -= Vital_OnVitalChanged;
+        }
     }
 
     private void Vital_OnVitalChanged()

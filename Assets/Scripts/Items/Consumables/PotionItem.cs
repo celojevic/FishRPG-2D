@@ -1,3 +1,4 @@
+using FishNet.Object;
 using System;
 using UnityEngine;
 
@@ -10,6 +11,7 @@ public class PotionItem : ConsumableItem
 
     public event Action OnUse;
 
+    [Server]
     public override void Use(Player user)
     {
         foreach (var item in Effects)

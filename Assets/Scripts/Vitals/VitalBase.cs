@@ -5,7 +5,7 @@ using UnityEngine;
 public class VitalBase : NetworkBehaviour
 {
 
-    private int _current;
+    [SyncVar] private int _current;
     internal int CurrentVital
     {
         get => _current;
@@ -39,11 +39,13 @@ public class VitalBase : NetworkBehaviour
         CurrentVital = MaxVital;
     }
 
+    [Server]
     public void Add(int amount)
     {
-        CurrentVital = Mathf.Clamp(CurrentVital + amount, MinVital, MaxVital);
+        CurrentVital = Mathf.Clamp(CurrentVital + amount, MinVital, MaxVital); ;
     }
 
+    [Server]
     public void Subtract(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital - amount, MinVital, MaxVital);

@@ -1,3 +1,4 @@
+using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
 
@@ -18,15 +19,22 @@ public class PlayerInteract : NetworkBehaviour
     {
         if (Input.GetKeyDown(_interactKey))
         {
-            TryInteract();
+            CmdTryInteract();
         }
     }
 
-    void TryInteract()
+    [ServerRpc]
+    void CmdTryInteract()
     {
         if (_interactableInRange == null) return;
 
         _interactableInRange.Interact(_player);
+        TargetInteractSuccess(NetworkManager.ClientManager.Connection);
+    }
+
+    [TargetRpc]
+    void TargetInteractSuccess(NetworkConnection conn)
+    {
         UiInteract.Hide();
     }
 
