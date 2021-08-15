@@ -631,7 +631,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _closeWindowKey: 27
-  _panels: []
 --- !u!1 &562758618
 GameObject:
   m_ObjectHideFlags: 0

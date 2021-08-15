@@ -1,5 +1,9 @@
 using UnityEngine;
 
+/// <summary>
+/// Base class for all UI panels that are opened with the press of a key.
+/// Must be childed to a UI Manager canvas object.
+/// </summary>
 public class UiPanel : MonoBehaviour
 {
 
@@ -11,13 +15,13 @@ public class UiPanel : MonoBehaviour
     /// Sets the panel inactive and subscribes to events. 
     /// Must call base method in overrides.
     /// </summary>
-    protected virtual void Start()
+    internal void OnStart()
     {
         _panel.SetActive(false);
         UiManager.OnPlayerAssigned += UiManager_OnPlayerAssigned;
     }
 
-    private void OnDestroy()
+    internal void OnStop()
     {
         UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
     }
@@ -34,12 +38,15 @@ public class UiPanel : MonoBehaviour
     /// <summary>
     /// Checks for input key to toggle the panel.
     /// </summary>
-    private void Update()
+    internal void CheckKeyDown()
     {
         if (Input.GetKeyDown(_key))
         {
             _panel.SetActive(!_panel.activeInHierarchy);
+            OnPanelActivation(_panel.activeInHierarchy);
         }
     }
+
+    protected virtual void OnPanelActivation(bool isActive) { }
 
 }

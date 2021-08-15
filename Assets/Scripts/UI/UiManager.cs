@@ -5,10 +5,22 @@ using UnityEngine;
 public class UiManager : MonoBehaviour
 {
 
+    #region Singleton
+
     /// <summary>
     /// Singleton instance of the UI manager.
     /// </summary>
     public static UiManager Instance;
+
+    void InitSingleton()
+    {
+        if (Instance == null)
+            Instance = this;
+        else if (Instance != this)
+            Destroy(gameObject);
+    }
+
+    #endregion
 
     private static Player _player;
     public static Player Player
@@ -23,7 +35,8 @@ public class UiManager : MonoBehaviour
     public static event Action OnPlayerAssigned;
 
     [SerializeField] private KeyCode _closeWindowKey = KeyCode.Escape;
-    [SerializeField] private UiPanel[] _panels = null;
+
+    private UiPanel[] _panels;
 
     private void Awake()
     {
@@ -31,17 +44,12 @@ public class UiManager : MonoBehaviour
         FindUiPanels();
     }
 
-    void InitSingleton()
+    private void Start()
     {
-        if (Instance == null)
-            Instance = this;
-        else if (Instance != this)
-            Destroy(gameObject);
-    }
-
-    void FindUiPanels()
-    {
-        _panels = FindObjectsOfType<UiPanel>();
+        foreach (var item in _panels)
+        {
+            item.OnStart();
+        }
     }
 
     private void Update()
@@ -50,6 +58,24 @@ public class UiManager : MonoBehaviour
         {
             CloseLastWindow();
         }
+
+        foreach (var item in _panels)
+        {
+            item.CheckKeyDown();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        foreach (var item in _panels)
+        {
+            item.OnStop();
+        }
+    }
+
+    void FindUiPanels()
+    {
+        _panels = GetComponentsInChildren<UiPanel>();
     }
 
     void CloseLastWindow()

@@ -13,6 +13,11 @@ public class Inventory : NetworkBehaviour
     public SyncList<NetItemValue> NetItems = new SyncList<NetItemValue>();
     public List<ItemValue> Items = new List<ItemValue>();
 
+    /// <summary>
+    /// Invokes the index of the changed item.
+    /// </summary>
+    public event Action OnItemChanged;
+
     #region Client Items Callback
 
     public override void OnStartClient(bool isOwner)
@@ -47,8 +52,13 @@ public class Inventory : NetworkBehaviour
             case SyncListOperation.Clear:
                 Items.Clear();
                 break;
+
+            case SyncListOperation.Complete:
+                // Prevent invoking twice
+                return;
         }
-        Debug.Log($"{op}\n{index}\n{oldItem}\n{newItem.Item.ItemBaseGuid}\n{asServer}");
+
+        OnItemChanged?.Invoke();
     }
 
     private void OnDestroy()
