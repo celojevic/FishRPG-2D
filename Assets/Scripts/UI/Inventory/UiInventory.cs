@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UiInventory : UiPanel
 {
@@ -9,7 +10,7 @@ public class UiInventory : UiPanel
 
     [Header("Slots")]
     [SerializeField] private UIInventorySlot _slotPrefab = null;
-    [SerializeField] private Transform _slotLayoutGroup = null;
+    [SerializeField] private GridLayoutGroup _slotLayoutGroup = null;
 
     private List<UIInventorySlot> _slots = new List<UIInventorySlot>();
 
@@ -62,13 +63,25 @@ public class UiInventory : UiPanel
 
     void SetupSlots()
     {
+        Resize();
+
         for (int i = 0; i < _invData.MaxSize; i++)
         {
-            UIInventorySlot slot = Instantiate(_slotPrefab, _slotLayoutGroup);
+            UIInventorySlot slot = Instantiate(_slotPrefab, _slotLayoutGroup.transform);
             slot.Setup(i);
             _slots.Add(slot);
         }
     }
 
+    void Resize()
+    {
+        if (_invData.UIData == null) return;
+
+        _slotLayoutGroup.cellSize = _invData.UIData.SlotSize;
+        _slotLayoutGroup.spacing = _invData.UIData.Spacing;
+        _slotLayoutGroup.padding = _invData.UIData.Padding;
+        _slotLayoutGroup.constraint = _invData.UIData.Constraint;
+        _slotLayoutGroup.constraintCount = _invData.UIData.ConstraintCount;
+    }
 
 }

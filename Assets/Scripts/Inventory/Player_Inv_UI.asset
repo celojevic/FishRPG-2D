@@ -9,9 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d04cb374a8ddc9847bb61f9374626b36, type: 3}
-  m_Name: Player_Inv
+  m_Script: {fileID: 11500000, guid: ae905ada28b0c284f9cb1af97656cfa9, type: 3}
+  m_Name: Player_Inv_UI
   m_EditorClassIdentifier: 
-  MaxSize: 10
-  InvType: 0
-  UIData: {fileID: 11400000, guid: 36c8da126fe938d4c95aa9b0c827326a, type: 2}
+  SlotSize: {x: 64, y: 64}
+  Spacing: {x: 10, y: 10}
+  Padding:
+    m_Left: 10
+    m_Right: 10
+    m_Top: 10
+    m_Bottom: 10
+  Constraint: 1
+  MatrixSize: 5
