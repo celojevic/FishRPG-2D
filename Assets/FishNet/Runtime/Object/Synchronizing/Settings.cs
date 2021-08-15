@@ -1,10 +1,7 @@
 using FishNet.Transporting;
 
-namespace FishNet.Object.Synchronizing
+namespace FishNet.Object.Synchronizing.Internal
 {
-    /// <summary>
-    /// The settings class used by the build in NetworkVar implementations
-    /// </summary>
     public class Settings
     {
         /// <summary>

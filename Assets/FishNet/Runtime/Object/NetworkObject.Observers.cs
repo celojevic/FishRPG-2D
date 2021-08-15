@@ -17,6 +17,7 @@ namespace FishNet.Object
         /// <summary>
         /// NetworkObserver on this object. May be null if not using observers.
         /// </summary>
+        [HideInInspector]
         public NetworkObserver NetworkObserver = null;
         /// <summary>
         /// Clients which can get messages from this NetworkObject.

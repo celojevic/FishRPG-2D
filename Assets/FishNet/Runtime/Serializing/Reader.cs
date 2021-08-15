@@ -19,6 +19,7 @@ namespace FishNet.Serializing
     public static class GenericReader<T>
     {
         public static Func<Reader, T> Read { internal get; set; }
+        public static Func<Reader, AutoPackType, T> ReadAutoPack { internal get; set; }
     }
 
     [CodegenIncludeInternal]
@@ -734,8 +735,8 @@ namespace FishNet.Serializing
             * than what bytes are available. */
             if (size < -1)
                 throw new DataMisalignedException($"Size of {size} is invalid.");
-            if ((size + Position) > Length)
-                throw new EndOfStreamException($"Read size of {size} is too large to fit within the packet length of {Length}.");
+            if (size > Remaining)
+                throw new EndOfStreamException($"Read size of {size} is larger than remaining data of {Remaining}.");
         }
 
 
@@ -811,17 +812,42 @@ namespace FishNet.Serializing
         /// <returns></returns>
         public T Read<T>()
         {
-            Func<Reader, T> del = GenericReader<T>.Read;
-            if (del == null)
+            if (IsDefaultAutoPack<T>(out AutoPackType packType))
             {
-                Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
-                return default;
+                Func<Reader, AutoPackType, T> del = GenericReader<T>.ReadAutoPack;
+                if (del == null)
+                {
+                    Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    return default;
+                }
+                else
+                {
+                    return del.Invoke(this, packType);
+                }
             }
             else
             {
-                return del.Invoke(this);
+                Func<Reader, T> del = GenericReader<T>.Read;
+                if (del == null)
+                {
+                    Debug.LogError($"Read method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                    return default;
+                }
+                else
+                {
+                    return del.Invoke(this);
+                }
             }
+
         }
+
+        /// <summary>
+        /// Returns if T takes AutoPackType argument.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="packType"></param>
+        /// <returns></returns>
+        internal bool IsDefaultAutoPack<T>(out AutoPackType packType) => Writer.IsDefaultAutoPack<T>(out packType);
         #endregion
     }
 }

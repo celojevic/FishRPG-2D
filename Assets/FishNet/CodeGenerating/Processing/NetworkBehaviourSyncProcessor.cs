@@ -70,6 +70,11 @@ namespace FishNet.CodeGenerating.Processing
                     //TryCreateSyncObjectCollection(typeDef);
                     TryCreateSyncList(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
                 }
+                else if (st == SyncType.Dictionary)
+                {
+                    //TryCreateSyncObjectCollection(typeDef);
+                    TryCreateSyncDictionary(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
+                }
 
                 modified = true;
             }
@@ -96,6 +101,8 @@ namespace FishNet.CodeGenerating.Processing
             {
                 if (fieldDef.FieldType.Name == typeof(SyncList<>).Name)
                     return SyncType.List;
+                else if (fieldDef.FieldType.Name == typeof(SyncDictionary<,>).Name)
+                    return SyncType.Dictionary;
             }
             //Sync attribute.
             CustomAttribute syncAttribute = GetSyncVarAttribute(fieldDef);
@@ -213,10 +220,56 @@ namespace FishNet.CodeGenerating.Processing
                 return;
             }
 
-            bool result = InitializeSyncObject(syncTypeCount, typeDef, originalFieldDef, monoType, syncAttribute);
+            bool result = InitializeSyncList(syncTypeCount, typeDef, originalFieldDef, monoType, syncAttribute);
             if (result)
                 allProcessedSyncs.Add((SyncType.List, null));
         }
+
+        /// <summary>
+        /// Tries to create a SyncDictionary.
+        /// </summary>
+        /// <param name="moduleDef"></param>
+        /// <param name="syncTypeCount"></param>
+        /// <param name="allProcessedSyncs"></param>
+        /// <param name="typeDef"></param>
+        /// <param name="fieldDef"></param>
+        /// <param name="diagnostics"></param>
+        private void TryCreateSyncDictionary(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef)
+        {
+            bool error;
+            CustomAttribute syncAttribute = GetSyncObjectAttribute(originalFieldDef, out error);
+            if (error)
+                return;
+
+            //Make sure type can be serialized.
+            GenericInstanceType tmpGenerinstanceType = originalFieldDef.FieldType as GenericInstanceType;
+            //this returns the correct data type, eg SyncList<int> would return int.
+            TypeReference keyTypeRef = tmpGenerinstanceType.GenericArguments[0];
+            TypeReference valueTypeRef = tmpGenerinstanceType.GenericArguments[1];
+            System.Type keyMonoType = keyTypeRef.GetMonoType();
+            System.Type valueMonoType = valueTypeRef.GetMonoType();
+
+            bool canSerialize;
+            //Check key serializer.
+            canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(keyTypeRef, true);
+            if (!canSerialize)
+            {
+                CodegenSession.Diagnostics.AddError($"SyncObject {originalFieldDef.Name} key type {keyMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                return;
+            }
+            //Check value serializer.
+            canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(valueTypeRef, true);
+            if (!canSerialize)
+            {
+                CodegenSession.Diagnostics.AddError($"SyncObject {originalFieldDef.Name} value type {valueMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                return;
+            }
+
+            bool result = InitializeSyncDictionary(syncTypeCount, typeDef, originalFieldDef, keyMonoType,valueMonoType, syncAttribute);
+            if (result)
+                allProcessedSyncs.Add((SyncType.Dictionary, null));
+        }
+
 
         /// <summary>
         /// Tries to create a SyncVar.
@@ -417,7 +470,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 CodegenSession.Diagnostics.AddError($"Could not create field for Sync type {originalFieldDef.FieldType.FullName}, name of {originalFieldDef.Name}.");
                 return null;
-            } 
+            }
 
             typeDef.Fields.Add(createdFieldDef);
             return createdFieldDef;
@@ -591,7 +644,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="originalFieldDef"></param>
         /// <param name="attribute"></param>
         /// <param name="diagnostics"></param>
-        internal bool InitializeSyncObject(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, System.Type monoType, CustomAttribute attribute)
+        internal bool InitializeSyncList(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, System.Type monoType, CustomAttribute attribute)
         {
             float sendRate = 0.1f;
             WritePermission writePermissions = WritePermission.ServerOnly;
@@ -612,18 +665,83 @@ namespace FishNet.CodeGenerating.Processing
             List<Instruction> instructions = new List<Instruction>();
 
             //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
-            typeDef.Module.ImportReference(monoType);
+            CodegenSession.Module.ImportReference(monoType);
             //Get Type for SyncList of dataTypeRef. eg SyncList<int>.
             System.Type typedSyncClassType = typeof(SyncList<>).MakeGenericType(monoType);
             CodegenSession.Module.ImportReference(typedSyncClassType);
 
             /* Set sync index. */
             System.Reflection.MethodInfo setSyncIndexMethodInfo = typedSyncClassType.GetMethod(SETSYNCINDEX_METHOD_NAME);
-            MethodReference setSyncIndexMethodRef = typeDef.Module.ImportReference(setSyncIndexMethodInfo);
+            MethodReference setSyncIndexMethodRef = CodegenSession.Module.ImportReference(setSyncIndexMethodInfo);
 
             /* Initialize with attribute settings. */
             System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod("InitializeInstanceInternal");
-            MethodReference initializeInstanceMethodRef = typeDef.Module.ImportReference(initializeInstanceMethodInfo);
+            MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
+            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));
+            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)readPermissions));
+            instructions.Add(processor.Create(OpCodes.Ldc_R4, sendRate));
+            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
+            instructions.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
+            instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMethodRef));
+
+            //Set NetworkBehaviour and SyncIndex to use.
+            uint hash = originalFieldDef.FullName.GetStableHash32();
+            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
+            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
+            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
+            instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMethodRef));
+
+            processor.InsertFirst(instructions);
+
+            return true;
+        }
+
+
+
+        /// <summary>
+        /// Initializes the SyncHandler FieldDefinition.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <param name="originalFieldDef"></param>
+        /// <param name="attribute"></param>
+        /// <param name="diagnostics"></param>
+        internal bool InitializeSyncDictionary(int syncCount, TypeDefinition typeDef, FieldDefinition originalFieldDef, System.Type keyMonoType, System.Type valueMonoType, CustomAttribute attribute)
+        {
+            float sendRate = 0.1f;
+            WritePermission writePermissions = WritePermission.ServerOnly;
+            ReadPermission readPermissions = ReadPermission.Observers;
+            Channel channel = Channel.Reliable;
+            //If attribute isn't null then override values.
+            if (attribute != null)
+            {
+                sendRate = attribute.GetField("SendRate", 0.1f);
+                writePermissions = WritePermission.ServerOnly;
+                readPermissions = attribute.GetField("ReadPermissions", ReadPermission.Observers);
+                channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
+            }
+
+            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
+            ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
+
+            List<Instruction> instructions = new List<Instruction>();
+
+            //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
+            CodegenSession.Module.ImportReference(keyMonoType);
+            CodegenSession.Module.ImportReference(valueMonoType);
+            //Get Type for SyncList of dataTypeRef. eg SyncList<int>.
+            System.Type typedSyncClassType = typeof(SyncDictionary<,>).MakeGenericType(keyMonoType, valueMonoType);
+            CodegenSession.Module.ImportReference(typedSyncClassType);
+
+            /* Set sync index. */
+            System.Reflection.MethodInfo setSyncIndexMethodInfo = typedSyncClassType.GetMethod(SETSYNCINDEX_METHOD_NAME);
+            MethodReference setSyncIndexMethodRef = CodegenSession.Module.ImportReference(setSyncIndexMethodInfo);
+
+            /* Initialize with attribute settings. */
+            System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod("InitializeInstanceInternal");
+            MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)writePermissions));

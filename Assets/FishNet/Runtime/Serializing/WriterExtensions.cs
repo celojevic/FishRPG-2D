@@ -32,7 +32,7 @@ namespace FishNet.Serializing
         public static void WriteUInt32(this Writer writer, uint value, AutoPackType packType = AutoPackType.Packed) => writer.WriteUInt32(value, packType);
         public static void WriteInt64(this Writer writer, long value, AutoPackType packType = AutoPackType.Packed) => writer.WriteInt64(value, packType);
         public static void WriteUInt64(this Writer writer, ulong value, AutoPackType packType = AutoPackType.Packed) => writer.WriteUInt64(value, packType);
-        public static void WriteSingle(this Writer writer, float value, AutoPackType packType = AutoPackType.Unpacked) => writer.WriteSingle(value,packType);
+        public static void WriteSingle(this Writer writer, float value, AutoPackType packType = AutoPackType.Unpacked) => writer.WriteSingle(value, packType);
         public static void WriteDouble(this Writer writer, double value) => writer.WriteDouble(value);
         public static void WriteDecimal(this Writer writer, decimal value) => writer.WriteDecimal(value);
         public static void WriteString(this Writer writer, string value) => writer.WriteString(value);

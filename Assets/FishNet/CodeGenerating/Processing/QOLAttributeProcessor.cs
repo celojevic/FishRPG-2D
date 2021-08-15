@@ -77,12 +77,12 @@ namespace FishNet.CodeGenerating.Processing
                         CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot have multiple quality of life attributes.");
                         error = true;
                     }
-                    //Static method.
-                    if (methodDef.IsStatic)
-                    {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
-                        error = true;
-                    }
+                    ////Static method.
+                    //if (methodDef.IsStatic)
+                    //{
+                    //    CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
+                    //    error = true;
+                    //}
                     //Abstract method.
                     if (methodDef.IsAbstract)
                     {

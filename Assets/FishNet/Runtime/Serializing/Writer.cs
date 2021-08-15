@@ -3,6 +3,7 @@ using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
@@ -17,12 +18,12 @@ namespace FishNet.Serializing
     public static class GenericWriter<T>
     {
         public static Action<Writer, T> Write { get; set; }
+        public static Action<Writer, T, AutoPackType> WriteAutoPack { get; set; }
     }
 
     [CodegenIncludeInternal]
     public partial class Writer
     {
-
         #region Public.
         /// <summary>
         /// Current write position.
@@ -776,12 +777,52 @@ namespace FishNet.Serializing
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         public void Write<T>(T value)
-        {            
-            Action<Writer, T> del = GenericWriter<T>.Write;
-            if (del == null)
-                Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+        {
+            if (IsDefaultAutoPack<T>(out AutoPackType packType))
+            {
+                Action<Writer, T, AutoPackType> del = GenericWriter<T>.WriteAutoPack;
+                if (del == null)
+                    Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                else
+                    del.Invoke(this, value, packType);
+            }
             else
-                del.Invoke(this, value);
+            {
+                Action<Writer, T> del =  GenericWriter<T>.Write;
+                if (del == null)
+                    Debug.LogError($"Write method not found for {typeof(T).Name}. Use a supported type or create a custom serializer.");
+                else
+                    del.Invoke(this, value);
+            }
+        }
+
+        /// <summary>
+        /// Returns if T takes AutoPackType argument.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="packType"></param>
+        /// <returns></returns>
+        internal static bool IsDefaultAutoPack<T>(out AutoPackType packType)
+        {
+            //todo bench this against using a hash lookup.
+            System.Type type = typeof(T);
+            if ((type == typeof(int) || type == typeof(uint) ||
+                type == typeof(long) || type == typeof(ulong)) ||
+                type == typeof(Color))
+            {
+                packType = AutoPackType.Packed;
+                return true;
+            }
+            else if (type == typeof(float))
+            {
+                packType = AutoPackType.Unpacked;
+                return true;
+            }
+            else
+            {
+                packType = AutoPackType.Unpacked;
+                return false;
+            }
         }
         #endregion
 

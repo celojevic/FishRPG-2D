@@ -69,7 +69,7 @@ namespace FishNet.Object.Synchronizing
         /// Delegate signature for when SyncList changes.
         /// </summary>
         /// <param name="op"></param>
-        /// <param name="itemIndex"></param>
+        /// <param name="index"></param>
         /// <param name="oldItem"></param>
         /// <param name="newItem"></param>
         public delegate void SyncListChanged(SyncListOperation op, int index, T oldItem, T newItem, bool asServer);
@@ -91,7 +91,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Copy of objects on client portion when acting as a host.
         /// </summary>
-        private readonly IList<T> _hostObjects = new List<T>();
+        private readonly IList<T> _clientHostObjects = new List<T>();
         /// <summary>
         /// Comparer to see if entries change when calling public methods.
         /// </summary>
@@ -111,12 +111,12 @@ namespace FishNet.Object.Synchronizing
 
         public SyncList(IEqualityComparer<T> comparer)
         {
-            this._comparer = comparer ?? EqualityComparer<T>.Default;
+            this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
         }
 
         public SyncList(IList<T> objects, IEqualityComparer<T> comparer = null)
         {
-            this._comparer = comparer ?? EqualityComparer<T>.Default;
+            this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             this._objects = objects;
         }
 
@@ -127,7 +127,6 @@ namespace FishNet.Object.Synchronizing
         /// <param name="index"></param>
         /// <param name="prev"></param>
         /// <param name="next"></param>
-        /// <param name="asServer"></param>
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
@@ -210,7 +209,7 @@ namespace FishNet.Object.Synchronizing
             * the server side and doing so again would result in duplicates
             * and potentially overwrite data not yet sent. */
             bool asClientAndHost = (!asServer && base.NetworkBehaviour.IsServer);
-            IList<T> objects = (asClientAndHost) ? _hostObjects : _objects;
+            IList<T> objects = (asClientAndHost) ? _clientHostObjects : _objects;
 
             int changes = (int)reader.ReadUInt32();
             for (int i = 0; i < changes; i++)
@@ -271,7 +270,7 @@ namespace FishNet.Object.Synchronizing
         {
             base.Reset();
             _changed.Clear();
-            _hostObjects.Clear();
+            _clientHostObjects.Clear();
         }
 
         /// <summary>
@@ -309,7 +308,7 @@ namespace FishNet.Object.Synchronizing
         {
             _objects.Clear();
             if (asServer)
-                AddOperation(SyncListOperation.Clear, 0, default, default);
+                AddOperation(SyncListOperation.Clear, -1, default, default);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ using FishNet.Connection;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using FishNet.Serializing.Helping;
 using FishNet.CodeGenerating.ILCore;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -136,19 +137,9 @@ namespace FishNet.CodeGenerating.Helping
         internal bool CreateGenericDelegates()
         {
             bool modified = false;
-
-            bool fishNetAssembly = FishNetILPP.IsFishNetAssembly();
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticReaderMethods)
             {
-                /* If the assembly delegates are being written for isn't FishNet core
-                * (eg: CSharp, or even FishNet.Components, then only write delegate
-                * if the method is not part of the FishNet assembly. This ensures that
-                * only the FishNet GeneratedReadersAndWritters will register FishNet built
-                * in serializers. */
-                if (!fishNetAssembly && FishNetILPP.IsFishNetAssembly(item.Value.Resolve().Module))
-                    continue;
-
                 CodegenSession.GenericReaderHelper.CreateReadDelegate(item.Value);
                 modified = true;
             }

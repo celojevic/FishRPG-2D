@@ -132,12 +132,12 @@ namespace FishNet.CodeGenerating.Helping
                 bool autoPackMethod = false;
                 if (parameterInfos.Length == 3)
                 {
-                    autoPackMethod = (parameterInfos[1].ParameterType == typeof(AutoPackType));
+                    autoPackMethod = (parameterInfos[2].ParameterType == typeof(AutoPackType));
                     if (!autoPackMethod)
                         continue;
                 }
                 //First parameter is generic; these are not supported.
-                if (parameterInfos[0].ParameterType.IsGenericParameter)
+                if (parameterInfos[1].ParameterType.IsGenericParameter)
                     continue;
 
                 /* TypeReference for the second parameter in the write method.
@@ -157,22 +157,12 @@ namespace FishNet.CodeGenerating.Helping
         internal bool CreateGenericDelegates()
         {
             bool modified = false;
-
-            bool fishNetAssembly = FishNetILPP.IsFishNetAssembly();
             /* Only write statics. This will include extensions and generated. */
             foreach (KeyValuePair<TypeReference, MethodReference> item in _staticWriterMethods)
             {
-                /* If the assembly delegates are being written for isn't FishNet core
-                * (eg: CSharp, or even FishNet.Components, then only write delegate
-                * if the method is not part of the FishNet assembly. This ensures that
-                * only the FishNet GeneratedReadersAndWritters will register FishNet built
-                * in serializers. */
-                if (!fishNetAssembly && FishNetILPP.IsFishNetAssembly(item.Value.Resolve().Module))
-                    continue;
-
                 CodegenSession.GenericWriterHelper.CreateWriteDelegate(item.Value);
                 modified = true;
-            }
+            } 
 
             return modified;
         }

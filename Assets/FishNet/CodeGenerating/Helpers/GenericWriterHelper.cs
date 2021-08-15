@@ -18,13 +18,17 @@ namespace FishNet.CodeGenerating.Helping
     {
 
         #region Reflection references.
-        private TypeReference _genericRWriterTypeRef;
+        private TypeReference _genericWriterTypeRef;
         private TypeReference _writerTypeRef;
         private MethodReference _writeGetSetMethodRef;
-        private TypeReference _actionTypeRef;
-        private MethodReference _actionConstructorMethodRef;
+        private MethodReference _writeAutoPackGetSetMethodRef;
+        private TypeReference _actionT2TypeRef;
+        private TypeReference _actionT3TypeRef;
+        private MethodReference _actionT2ConstructorMethodRef;
+        private MethodReference _actionT3ConstructorMethodRef;
         private TypeDefinition _generatedReaderWriterClassTypeDef;
         private MethodDefinition _generatedReaderWriterOnLoadMethodDef;
+        private TypeReference _autoPackTypeRef;
         #endregion
 
         #region Misc.
@@ -46,13 +50,20 @@ namespace FishNet.CodeGenerating.Helping
         /// <returns></returns>
         internal bool ImportReferences()
         {
-            _genericRWriterTypeRef = CodegenSession.Module.ImportReference(typeof(GenericWriter<>));
+            _genericWriterTypeRef = CodegenSession.Module.ImportReference(typeof(GenericWriter<>));
             _writerTypeRef = CodegenSession.Module.ImportReference(typeof(Writer));
-            _actionTypeRef = CodegenSession.Module.ImportReference(typeof(Action<,>));
-            _actionConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,>).GetConstructors()[0]);
+            _actionT2TypeRef = CodegenSession.Module.ImportReference(typeof(Action<,>));
+            _actionT3TypeRef = CodegenSession.Module.ImportReference(typeof(Action<,,>));
+            _actionT2ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,>).GetConstructors()[0]);
+            _actionT3ConstructorMethodRef = CodegenSession.Module.ImportReference(typeof(Action<,,>).GetConstructors()[0]);
+            _autoPackTypeRef = CodegenSession.Module.ImportReference(typeof(AutoPackType));
 
-            System.Reflection.PropertyInfo writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.Write));
+            System.Reflection.PropertyInfo writePropertyInfo;
+            writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.Write));
             _writeGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+            writePropertyInfo = typeof(GenericWriter<>).GetProperty(nameof(GenericWriter<int>.WriteAutoPack));
+            _writeAutoPackGetSetMethodRef = CodegenSession.Module.ImportReference(writePropertyInfo.GetSetMethod());
+
 
             return true;
         }
@@ -106,7 +117,6 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates a Write delegate for writeMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
         /// <param name="writeMethodRef"></param>
-        /// <param name="diagnostics"></param>
         internal void CreateWriteDelegate(MethodReference writeMethodRef)
         {
             /* If class for generated reader/writers isn't known yet.
@@ -117,7 +127,6 @@ namespace FishNet.CodeGenerating.Helping
 
             if (_generatedReaderWriterClassTypeDef == null)
                 _generatedReaderWriterClassTypeDef = CodegenSession.GeneralHelper.GetOrCreateClass(out created, WriterGenerator.GENERATED_TYPE_ATTRIBUTES, WriterGenerator.GENERATED_CLASS_NAME, null);
-
             /* If constructor isn't set then try to get or create it
              * and also add it to methods if were created. */
             if (_generatedReaderWriterOnLoadMethodDef == null)
@@ -126,7 +135,6 @@ namespace FishNet.CodeGenerating.Helping
                 if (created)
                     CodegenSession.GeneralHelper.CreateRuntimeInitializeOnLoadMethodAttribute(_generatedReaderWriterOnLoadMethodDef);
             }
-
             //Check if ret already exist, if so remove it; ret will be added on again in this method.
             if (_generatedReaderWriterOnLoadMethodDef.Body.Instructions.Count != 0)
             {
@@ -136,34 +144,54 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             ILProcessor processor = _generatedReaderWriterOnLoadMethodDef.Body.GetILProcessor();
-            TypeReference dataType;
+            TypeReference dataTypeRef;
             //Static methods will have the data type as the second parameter (1).
             if (writeMethodRef.Resolve().Attributes.HasFlag(MethodAttributes.Static))
-                dataType = writeMethodRef.Parameters[1].ParameterType;
+                dataTypeRef = writeMethodRef.Parameters[1].ParameterType;
             else
-                dataType = writeMethodRef.Parameters[0].ParameterType;
-
-            if (_delegatedTypes.Contains(dataType))
+                dataTypeRef = writeMethodRef.Parameters[0].ParameterType;
+            //Check if writer already exist.
+            if (_delegatedTypes.Contains(dataTypeRef))
             {
-                CodegenSession.Diagnostics.AddError($"Generic write already created for {dataType.FullName}.");
+                CodegenSession.Diagnostics.AddError($"Generic write already created for {dataTypeRef.FullName}.");
                 return;
             }
             else
             {
-                _delegatedTypes.Add(dataType);
+                _delegatedTypes.Add(dataTypeRef);
             }
 
-            //Create a Action<Writer, T> delegate
+
+            /* Create a Action<Writer, T> delegate.
+             * May also be Action<Writer, AutoPackType, T> delegate
+             * for packed types. */
             processor.Emit(OpCodes.Ldnull);
             processor.Emit(OpCodes.Ldftn, writeMethodRef);
-            GenericInstanceType actionGenericInstance = _actionTypeRef.MakeGenericInstanceType(_writerTypeRef, dataType);
-            MethodReference actionConstructorInstanceMethodRef = _actionConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
-            processor.Emit(OpCodes.Newobj, actionConstructorInstanceMethodRef);
 
+            GenericInstanceType actionGenericInstance;
+            MethodReference actionConstructorInstanceMethodRef;
+            bool isAutoPacked = CodegenSession.WriterHelper.IsAutoPackedType(dataTypeRef);
+
+            //Generate for auto pack type.
+            if (isAutoPacked)
+            {
+                actionGenericInstance = _actionT3TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef, _autoPackTypeRef);
+                actionConstructorInstanceMethodRef = _actionT3ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
+            }
+            //Generate for normal type.
+            else
+            {
+                actionGenericInstance = _actionT2TypeRef.MakeGenericInstanceType(_writerTypeRef, dataTypeRef);
+                actionConstructorInstanceMethodRef = _actionT2ConstructorMethodRef.MakeHostInstanceGeneric(actionGenericInstance);
+            }
+
+            processor.Emit(OpCodes.Newobj, actionConstructorInstanceMethodRef);
             //Call delegate to GenericWriter<T>.Write
-            GenericInstanceType genericInstance = _genericRWriterTypeRef.MakeGenericInstanceType(dataType);
-            MethodReference genericRWriteMethodRef = _writeGetSetMethodRef.MakeHostInstanceGeneric(genericInstance);
-            processor.Emit(OpCodes.Call, genericRWriteMethodRef);
+            GenericInstanceType genericInstance = _genericWriterTypeRef.MakeGenericInstanceType(dataTypeRef);
+            MethodReference genericrWriteMethodRef = (isAutoPacked) ?
+                _writeAutoPackGetSetMethodRef.MakeHostInstanceGeneric(genericInstance) :
+                _writeGetSetMethodRef.MakeHostInstanceGeneric(genericInstance);
+            processor.Emit(OpCodes.Call, genericrWriteMethodRef);
 
             processor.Emit(OpCodes.Ret);
         }
