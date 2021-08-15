@@ -1,0 +1,16 @@
+{
+    "name": "FishNet.Example",
+    "references": [
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67",
+        "GUID:663ca7cd9a4d99b4aa83595cc7af937b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

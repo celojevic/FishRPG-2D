@@ -1,6 +1,7 @@
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Inventory : NetworkBehaviour
@@ -9,7 +10,53 @@ public class Inventory : NetworkBehaviour
     [Tooltip("Data object for this inventory.")]
     [SerializeField] private InventoryData _data = null;
 
-    public SyncList<NetItemValue> Items = new SyncList<NetItemValue>();
+    public SyncList<NetItemValue> NetItems = new SyncList<NetItemValue>();
+    public List<ItemValue> Items = new List<ItemValue>();
+
+    #region Client Items Callback
+
+    public override void OnStartClient(bool isOwner)
+    {
+        if (!isOwner) return;
+        NetItems.OnChange += Items_OnChange;
+    }
+
+    private void Items_OnChange(SyncListOperation op, int index, 
+        NetItemValue oldItem, NetItemValue newItem, bool asServer)
+    {
+        if (asServer) return;
+
+        switch (op)
+        {
+            case SyncListOperation.Add:
+                Items.Add(newItem.ToItemValue());
+                break;
+
+            case SyncListOperation.Insert:
+                Items.Insert(index, newItem.ToItemValue());
+                break;
+
+            case SyncListOperation.Set:
+                Items[index] = newItem.ToItemValue();
+                break;
+
+            case SyncListOperation.RemoveAt:
+                Items.RemoveAt(index);
+                break;
+
+            case SyncListOperation.Clear:
+                Items.Clear();
+                break;
+        }
+        Debug.Log($"{op}\n{index}\n{oldItem}\n{newItem.Item.ItemBaseGuid}\n{asServer}");
+    }
+
+    private void OnDestroy()
+    {
+        NetItems.OnChange -= Items_OnChange;
+    }
+
+    #endregion
 
     #region Adding Items
 
@@ -18,7 +65,7 @@ public class Inventory : NetworkBehaviour
     {
         if (!TryAddItem(item)) return false;
 
-        Items.Add(item);
+        NetItems.Add(item);
         return true;
     }
 
@@ -27,17 +74,15 @@ public class Inventory : NetworkBehaviour
     {
         if (HasItem(item.Item))
         {
-
+            // stackables
         }
         else
         {
-            if (Items.Count >= _data.MaxSize)
+            if (NetItems.Count >= _data.MaxSize)
             {
                 // notify inv full
                 return false;
             }
-
-            Items.Add(item);
         }
 
         return true;
@@ -49,7 +94,7 @@ public class Inventory : NetworkBehaviour
 
     bool HasItem(NetItem item)
     {
-        foreach (var itemVal in Items)
+        foreach (var itemVal in NetItems)
         {
             if (itemVal.Item == item)
                 return true;

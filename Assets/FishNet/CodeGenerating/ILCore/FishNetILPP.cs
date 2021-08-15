@@ -8,14 +8,14 @@ using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Processing;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Broadcast;
-using Unity.CompilationPipeline.Common.Diagnostics;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.ILCore
 {
     public class FishNetILPP : ILPostProcessor
     {
         #region Const.
-        internal const string RUNTIME_ASSEMBLY_NAME = "FishNet";
+        internal const string RUNTIME_ASSEMBLY_NAME = "FishNet.Runtime";
         #endregion
 
         public override bool WillProcess(ICompiledAssembly compiledAssembly)
@@ -29,8 +29,14 @@ namespace FishNet.CodeGenerating.ILCore
             if (compiledAssembly.Name.Contains("Editor"))
                 return false;
 
-            //bool referencesFishNet = FishNetILPP.IsFishNetAssembly(compiledAssembly) || compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == RUNTIME_ASSEMBLY_NAME);
-            bool referencesFishNet = compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == RUNTIME_ASSEMBLY_NAME);
+            /* This line contradicts the one below where referencesFishNet
+             * becomes true if the assembly is FishNetAssembly. This is here
+             * intentionally to stop codegen from running on the runtime
+             * fishnet assembly, but the option below is for debugging. I would
+             * comment out this check if I wanted to compile fishnet runtime. */
+            if (compiledAssembly.Name == RUNTIME_ASSEMBLY_NAME)
+                return false;
+            bool referencesFishNet = FishNetILPP.IsFishNetAssembly(compiledAssembly) || compiledAssembly.References.Any(filePath => Path.GetFileNameWithoutExtension(filePath) == RUNTIME_ASSEMBLY_NAME);
             return referencesFishNet;
         }
         public override ILPostProcessor GetInstance() => this;
@@ -48,9 +54,15 @@ namespace FishNet.CodeGenerating.ILCore
 
             bool modified = false;
 
+            /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
+             * then don't bother processing the rest. */
+            if (CodegenSession.NetworkBehaviourProcessor.NonNetworkBehaviourHasInvalidAttributes(CodegenSession.Module.Types))
+                return new ILPostProcessResult(null, CodegenSession.Diagnostics);
+
             modified |= CreateDeclaredDelegates();
             modified |= CreateDeclaredSerializers();
             modified |= CreateIBroadcast();
+            modified |= CreateQOLAttributes();
             modified |= CreateNetworkBehaviours();
             modified |= CreateGenericReadWriteDelegates();
 
@@ -68,11 +80,10 @@ namespace FishNet.CodeGenerating.ILCore
                     SymbolStream = pdb,
                     WriteSymbols = true
                 };
-                assemblyDef.Write(pe, writerParameters);                
+                assemblyDef.Write(pe, writerParameters);
                 return new ILPostProcessResult(new InMemoryAssembly(pe.ToArray(), pdb.ToArray()), CodegenSession.Diagnostics);
             }
         }
-
 
         /// <summary>
         /// Creates delegates for user declared serializers.
@@ -171,6 +182,27 @@ namespace FishNet.CodeGenerating.ILCore
         }
 
         /// <summary>
+        /// Handles QOLAttributes such as [Server].
+        /// </summary>
+        /// <returns></returns>
+        private bool CreateQOLAttributes()
+        {
+            bool modified = false;
+
+            List<TypeDefinition> allTypeDefs = CodegenSession.Module.Types.ToList();
+            foreach (TypeDefinition td in allTypeDefs)
+            {
+                if (CodegenSession.GeneralHelper.IgnoreTypeDefinition(td))
+                    continue;
+
+                modified |= CodegenSession.QolAttributeProcessor.Process(td);
+            }
+
+            
+            return modified;
+        }
+
+        /// <summary>
         /// Creates NetworkBehaviour changes.
         /// </summary>
         /// <param name="moduleDef"></param>
@@ -178,11 +210,14 @@ namespace FishNet.CodeGenerating.ILCore
         private bool CreateNetworkBehaviours()
         {
             bool modified = false;
-
             //Get all network behaviours to process.
             List<TypeDefinition> networkBehaviourTypeDefs = CodegenSession.Module.Types
                 .Where(td => td.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
                 .ToList();
+
+            //Moment a NetworkBehaviour exist the assembly is considered modified.
+            if (networkBehaviourTypeDefs.Count > 0)
+                modified = true;
 
             /* Remove any networkbehaviour typedefs which are inherited by
              * another networkbehaviour typedef. When a networkbehaviour typedef
@@ -196,7 +231,7 @@ namespace FishNet.CodeGenerating.ILCore
                 while (tdClimb != null)
                 {
                     tdSubClasses.Add(tdClimb);
-                    if (tdClimb.NonNetworkBehaviourBaseType())
+                    if (tdClimb.CanProcessBaseType())
                         tdClimb = tdClimb.BaseType.Resolve();
                     else
                         tdClimb = null;
@@ -212,7 +247,7 @@ namespace FishNet.CodeGenerating.ILCore
                 }
                 //Subtract entries removed from i since theyre now gone.
                 i -= entriesRemoved;
-            }
+            } 
 
             /* This needs to persist because it holds SyncHandler
              * references for each SyncType. Those
@@ -220,6 +255,7 @@ namespace FishNet.CodeGenerating.ILCore
              * using the same Type. */
             List<(SyncType, ProcessedSync)> allProcessedSyncs = new List<(SyncType, ProcessedSync)>();
             HashSet<string> allProcessedCallbacks = new HashSet<string>();
+            List<TypeDefinition> processedClasses = new List<TypeDefinition>();
 
             foreach (TypeDefinition typeDef in networkBehaviourTypeDefs)
             {
@@ -228,18 +264,8 @@ namespace FishNet.CodeGenerating.ILCore
                 int allRpcCount = 0;
                 //Callbacks are per networkbehaviour + hierarchy as well.
                 allProcessedCallbacks.Clear();
-                modified |= CodegenSession.NetworkBehaviourProcessor.Process(null, typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
-
-                //Register rpc count on each script that inherits from network behaviour.
-                TypeDefinition climbTypeDef = typeDef;
-                while (climbTypeDef != null)
-                {
-                    CodegenSession.NetworkBehaviourProcessor.CreateRegisterRpcCount(climbTypeDef, allRpcCount);
-                    if (climbTypeDef.BaseType != null && climbTypeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
-                        climbTypeDef = climbTypeDef.BaseType.Resolve();
-                    else
-                        climbTypeDef = null;
-                }
+                //modified |= CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
+                CodegenSession.NetworkBehaviourProcessor.Process(typeDef, ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
             }
 
             return modified;

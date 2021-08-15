@@ -17,10 +17,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static MethodDefinition ResolveDefaultPublicConstructor(this TypeReference typeRef)
         {
-            foreach (MethodDefinition methodRef in typeRef.Resolve().Methods)
+            foreach (MethodDefinition methodDef in typeRef.Resolve().Methods)
             {
-                if (methodRef.IsConstructor && methodRef.Resolve().IsPublic && methodRef.Parameters.Count == 0)
-                    return methodRef;
+                if (methodDef.IsConstructor && methodDef.Resolve().IsPublic && methodDef.Parameters.Count == 0)
+                    return methodDef;
             }
             return null;
         }

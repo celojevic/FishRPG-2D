@@ -27,6 +27,8 @@ public class PlayerVisuals : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
+
         CheckSpriteFlip();
         CheckAnimation();
     }

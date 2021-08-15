@@ -1,7 +1,7 @@
 ﻿using Mono.Cecil;
 using System;
 using System.Linq;
-
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
@@ -10,13 +10,56 @@ namespace FishNet.CodeGenerating.Helping.Extension
     internal static class TypeDefinitionExtensions
     {
         /// <summary>
+        /// Returns if typeDef or any of it's parents inherit from NetworkBehaviour.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef)
+        {
+            TypeDefinition copyTypeDef = typeDef;
+            while (copyTypeDef != null)
+            {
+                //Base is a network behaviour.
+                if (copyTypeDef.BaseType != null && copyTypeDef.BaseType.FullName == CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                    return true;
+
+                copyTypeDef = GetNextBaseClass(copyTypeDef);
+            }
+
+            //Fall through, network behaviour not found.
+            return false;
+        }
+
+        /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        internal static bool NonNetworkBehaviourBaseType(this TypeDefinition typeDef)
+        internal static bool CanProcessBaseType(this TypeDefinition typeDef)
         {
             return (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName);
+        }
+        /// <summary>
+        /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal static TypeDefinition GetNextBaseClassToProcess(TypeDefinition typeDef)
+        {
+            if (typeDef.BaseType != null && typeDef.BaseType.FullName != CodegenSession.ObjectHelper.NetworkBehaviour_FullName)
+                return typeDef.BaseType.Resolve();
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Gets the next base type for typeDef.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        internal static TypeDefinition GetNextBaseClass(TypeDefinition typeDef)
+        {
+            return (typeDef.BaseType == null) ? null : typeDef.BaseType.Resolve();
         }
         /// <summary>
         /// Returns if typeDef is static (abstract, sealed).
@@ -28,7 +71,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             //Combing flags in a single check some reason doesn't work right with HasFlag.
             return (typeDef.Attributes.HasFlag(TypeAttributes.Abstract) && typeDef.Attributes.HasFlag(TypeAttributes.Sealed));
         }
-
+         
         /// <summary>
         /// Gets an enum underlying type for typeDef.
         /// </summary>
@@ -118,6 +161,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
         internal static MethodDefinition GetMethod(this TypeDefinition typeDef, string methodName)
         {
             return typeDef.Methods.FirstOrDefault(method => method.Name == methodName);
+        }
+
+        /// <summary>
+        /// Finds the first method by a given name.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <param name="methodName"></param>
+        /// <returns></returns>
+        internal static MethodDefinition GetMethod(this TypeDefinition typeDef, string methodName, Type[] types)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

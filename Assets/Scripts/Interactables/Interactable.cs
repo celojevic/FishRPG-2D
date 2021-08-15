@@ -31,6 +31,6 @@ public abstract class Interactable : NetworkBehaviour
         UiInteract.Hide();
     }
 
-    public abstract void Interact(Player player);
+    public virtual void Interact(Player player) { }
 
 }

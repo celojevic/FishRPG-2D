@@ -179,7 +179,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefabId: 1
+  NetworkObserver: {fileID: 0}
+  _prefabId: 2
   _scenePathHash: 584410112
   _sceneId: 0
   SceneTransformProperties:

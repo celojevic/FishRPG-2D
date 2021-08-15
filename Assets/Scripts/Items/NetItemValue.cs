@@ -26,7 +26,11 @@ public class NetItemValue
 
     public ItemValue ToItemValue()
     {
-        return null;
+        return new ItemValue
+        {
+            Item = Database.Instance?.GetItemBase(Item.ItemBaseGuid),
+            Quantity = this.Quantity
+        };
     }
 
 }

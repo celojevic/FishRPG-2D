@@ -1,3 +1,4 @@
+using FishNet;
 using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
@@ -17,6 +18,8 @@ public class PlayerInteract : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
+
         if (Input.GetKeyDown(_interactKey))
         {
             CmdTryInteract();
@@ -29,7 +32,7 @@ public class PlayerInteract : NetworkBehaviour
         if (_interactableInRange == null) return;
 
         _interactableInRange.Interact(_player);
-        TargetInteractSuccess(NetworkManager.ClientManager.Connection);
+        TargetInteractSuccess(InstanceFinder.ClientManager.Connection);
     }
 
     [TargetRpc]

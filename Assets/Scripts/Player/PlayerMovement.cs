@@ -19,8 +19,10 @@ public class PlayerMovement : NetworkBehaviour
         _rb = GetComponent<Rigidbody2D>();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
+        if (!IsOwner) return;
+
         MoveRigidbody();
     }
 
@@ -30,7 +32,7 @@ public class PlayerMovement : NetworkBehaviour
 
         if (_player.Input.InputVector == Vector2.zero) return;
 
-        _rb.velocity = _player.Input.InputVector * _moveSpeed;
+        _rb.velocity = _player.Input.InputVector.normalized * _moveSpeed;
     }
 
 }

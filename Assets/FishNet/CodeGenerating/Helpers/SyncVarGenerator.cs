@@ -575,61 +575,59 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ret);
         }
 
-#pragma warning disable 162
         /// <summary>
         /// Creates a ret of false if compared value is unchanged from current.
         /// </summary>
-        private void CreateRetFalseIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef, MethodReference comparerMethodRef)
+        private void CreateRetFalseIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef, MethodReference comparerMethodRef) //fix
         {
-            return; //fix unchanged check.
-            Instruction endIfInst = processor.Create(OpCodes.Nop);
-            //If (Comparer.EqualityCompare(_value, _initialValue)) return;
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, valueFieldDef);
-            //If comparing against another field.
-            if (nextValueDef is FieldDefinition fd)
-            {
-                processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Ldfld, fd);
-            }
-            //If comparing against a parameter.
-            else if (nextValueDef is ParameterDefinition pd)
-            {
-                processor.Emit(OpCodes.Ldarg, pd);
-            }
-            processor.Emit(OpCodes.Call, comparerMethodRef);
-            processor.Emit(OpCodes.Brfalse, endIfInst);
-            CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
-            processor.Append(endIfInst);
+            //Instruction endIfInst = processor.Create(OpCodes.Nop);
+            ////If (Comparer.EqualityCompare(_value, _initialValue)) return;
+            //processor.Emit(OpCodes.Ldarg_0);
+            //processor.Emit(OpCodes.Ldfld, valueFieldDef);
+            ////If comparing against another field.
+            //if (nextValueDef is FieldDefinition fd)
+            //{
+            //    processor.Emit(OpCodes.Ldarg_0);
+            //    processor.Emit(OpCodes.Ldfld, fd);
+            //}
+            ////If comparing against a parameter.
+            //else if (nextValueDef is ParameterDefinition pd)
+            //{
+            //    processor.Emit(OpCodes.Ldarg, pd);
+            //}
+            //processor.Emit(OpCodes.Call, comparerMethodRef);
+            //processor.Emit(OpCodes.Brfalse, endIfInst);
+            //CodegenSession.GeneralHelper.CreateRetBoolean(processor, false);
+            //processor.Append(endIfInst);
         }
+
 
         /// <summary>
         /// Creates a ret if compared value is unchanged from current.
         /// </summary>
-        private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef, MethodReference comparerMethodRef)
+        private void CreateRetIfUnchanged(ILProcessor processor, FieldDefinition valueFieldDef, object nextValueDef, MethodReference comparerMethodRef) //fix
         {
-            return; //fix unchanged check.
-            Instruction endIfInst = processor.Create(OpCodes.Nop);
-            //If (Comparer.EqualityCompare(_value, _initialValue)) return;
-            processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Ldfld, valueFieldDef);
-            //If comparing against another field.
-            if (nextValueDef is FieldDefinition fd)
-            {
-                processor.Emit(OpCodes.Ldarg_0);
-                processor.Emit(OpCodes.Ldfld, fd);
-            }
-            //If comparing against a parameter.
-            else if (nextValueDef is ParameterDefinition pd)
-            {
-                processor.Emit(OpCodes.Ldarg, pd);
-            }
-            processor.Emit(OpCodes.Call, comparerMethodRef);
-            processor.Emit(OpCodes.Brfalse, endIfInst);
-            processor.Emit(OpCodes.Ret);
-            processor.Append(endIfInst);
+            //Instruction endIfInst = processor.Create(OpCodes.Nop);
+            ////If (Comparer.EqualityCompare(_value, _initialValue)) return;
+            //processor.Emit(OpCodes.Ldarg_0);
+            //processor.Emit(OpCodes.Ldfld, valueFieldDef);
+            ////If comparing against another field.
+            //if (nextValueDef is FieldDefinition fd)
+            //{
+            //    processor.Emit(OpCodes.Ldarg_0);
+            //    processor.Emit(OpCodes.Ldfld, fd);
+            //}
+            ////If comparing against a parameter.
+            //else if (nextValueDef is ParameterDefinition pd)
+            //{
+            //    processor.Emit(OpCodes.Ldarg, pd);
+            //}
+            //processor.Emit(OpCodes.Call, comparerMethodRef);
+            //processor.Emit(OpCodes.Brfalse, endIfInst);
+            //processor.Emit(OpCodes.Ret);
+            //processor.Append(endIfInst);
         }
-#pragma warning restore 162
+
 
         /// <summary>
         /// Creates a call to the base NetworkBehaviour.

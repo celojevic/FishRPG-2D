@@ -2,6 +2,7 @@
 using FishNet.CodeGenerating.Helping;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Connection;
+using FishNet.Object;
 using FishNet.Object.Helping;
 using FishNet.Transporting;
 using Mono.Cecil;
@@ -268,8 +269,8 @@ namespace FishNet.CodeGenerating.Processing
                 CodegenSession.WriterHelper.CreateWrite(createdProcessor, pooledWriterVariableDef, writtenParameters[i], writeMethodRef);
             }
 
-            //int methodHash = CodegenSession.ObjectHelper.GetMethodHash(originalMethodDef);
-            int methodHash = allRpcCount;
+            //int methodHash = allRpcCount;
+            uint methodHash = originalMethodDef.FullName.GetStableHash32();
             //Call the method on NetworkBehaviour responsible for sending out the rpc.
             if (rpcType == RpcType.Server)
                 CodegenSession.ObjectHelper.CreateSendServerRpc(createdProcessor, methodHash, pooledWriterVariableDef, channelVariableDef);
@@ -378,11 +379,11 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateServerRpcConditionsForClient(ILProcessor createdProcessor, MethodDefinition methodDef, CustomAttribute rpcAttribute)
         {
             bool requireOwnership = rpcAttribute.GetField("RequireOwnership", true);
-            //If (!base.IsClient)
-            CodegenSession.ObjectHelper.CreateIsClientCheck(createdProcessor, methodDef, true, false);
-            //If (!base.Owner);
+            //If (!base.IsOwner);
             if (requireOwnership)
-                CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, true);
+                CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Warn, true);
+            //If (!base.IsClient)
+            CodegenSession.ObjectHelper.CreateIsClientCheck(createdProcessor, methodDef, LoggingType.Warn, true, true);
         }
 
         /// <summary>
@@ -408,7 +409,7 @@ namespace FishNet.CodeGenerating.Processing
         private void CreateClientRpcConditionsForServer(ILProcessor createdProcessor, MethodDefinition methodDef)
         {
             //If (!base.IsServer)
-            CodegenSession.ObjectHelper.CreateIsServerCheck(createdProcessor, methodDef, true, false);
+            CodegenSession.ObjectHelper.CreateIsServerCheck(createdProcessor, methodDef, LoggingType.Warn, true, false);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using FishNet.CodeGenerating.Helping.Extension;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,6 +15,7 @@ namespace FishNet.CodeGenerating.Processing
         /// Methods modified or iterated during weaving.
         /// </summary>
         internal List<MethodDefinition> ModifiedMethodDefinitions = new List<MethodDefinition>();
+        private List<TypeDefinition> _processedClasses = new List<TypeDefinition>();
         #endregion
 
         #region Const.
@@ -21,159 +23,275 @@ namespace FishNet.CodeGenerating.Processing
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
         #endregion
 
-        internal bool Process( TypeDefinition firstTypeDef, TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks)
+        internal bool Process(TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks)
         {
             bool modified = false;
 
-            //Disallow nested network behaviours.
-            if (typeDef.NestedTypes
-                .Where(t => t.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
-                .ToList().Count > 0)
+            TypeDefinition copyTypeDef = typeDef;
+            TypeDefinition firstTypeDef = typeDef;
+            /* Make awake methods for all inherited classes
+             * public and virtual. This is so I can add logic
+             * to the firstTypeDef awake and still execute
+             * user awake methods. */
+            if (!CreateOrModifyAwakeMethods(firstTypeDef))
             {
-                CodegenSession.Diagnostics.AddError($"{typeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
+                CodegenSession.Diagnostics.AddError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
                 return modified;
             }
+            CallBaseAwakeMethods(firstTypeDef);
 
-            //First typeDef to process. Will always be child most.
-            if (firstTypeDef == null)
+            do
             {
-                firstTypeDef = typeDef;
+                /* Class was already processed. Since child most is processed first
+                 * this can occur if a class is inherited by multiple types. If a class
+                 * has already then processed then there is no reason to scale up the hierarchy
+                 * because it would have already been done. */
+                if (HasClassBeenProcessed(copyTypeDef))
+                    break;
 
-                if (!MakeAwakeMethodsPublicVirtual(typeDef))
+                //Disallow nested network behaviours.
+                if (copyTypeDef.NestedTypes
+                    .Where(t => t.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
+                    .ToList().Count > 0)
+                {
+                    CodegenSession.Diagnostics.AddError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
                     return modified;
-                MethodDefinition childMostAwakeMethodDef = GetChildMostAwakeMethodDefinition(typeDef);
-                List<MethodDefinition> networkInitializeMethodDefs = CreateNetworkInitializeMethodDefinitions(typeDef);
-                CreateNetworkInitializeBaseCalls(typeDef, networkInitializeMethodDefs, 0);
-                CreateFirstNetworkInitializeCall(typeDef, childMostAwakeMethodDef, networkInitializeMethodDefs[0]);
-            }
+                }
 
-            modified |= CodegenSession.NetworkBehaviourQolAttributeProcessor.Process(typeDef);
-            modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(typeDef, ref allRpcCount);
-            modified |= CodegenSession.NetworkBehaviourCallbackProcessor.Process(firstTypeDef, typeDef, allProcessedCallbacks);
-            modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(typeDef, allProcessedSyncs);
+                /* Create NetworkInitialize before-hand so the other procesors
+                 * can use it. */
+                CreateNetworkInitializeMethod(copyTypeDef);
+                modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref allRpcCount);
+                modified |= CodegenSession.NetworkBehaviourCallbackProcessor.Process(firstTypeDef, copyTypeDef, allProcessedCallbacks);
+                modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs);
 
-            //Also process base types.
-            if (typeDef.NonNetworkBehaviourBaseType())
-                Process(firstTypeDef, typeDef.BaseType.Resolve(), ref allRpcCount, allProcessedSyncs, allProcessedCallbacks);
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+            } while (copyTypeDef != null);
 
-            List<MethodDefinition> modifiableMethods = GetModifiableMethods(typeDef);
-            CodegenSession.NetworkBehaviourSyncProcessor.ReplaceGetSets(modifiableMethods, allProcessedSyncs);
+            /* If here then all inerited classes for firstTypeDef have
+             * been processed. */
+            //CreateNetworkInitializeBaseCalls(firstTypeDef);
+            CallNetworkInitializeFromAwake(firstTypeDef);
+
+            //Add to processed.
+            copyTypeDef = firstTypeDef;
+            do
+            {
+                _processedClasses.Add(copyTypeDef);
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+            } while (copyTypeDef != null);
 
             return modified;
         }
 
+        /// <summary>
+        /// Returns if a class has been processed.
+        /// </summary>
+        /// <param name="typeDef"></param>
+        /// <returns></returns>
+        private bool HasClassBeenProcessed(TypeDefinition typeDef)
+        {
+            return _processedClasses.Contains(typeDef);
+        }
+
+        /// <summary>
+        /// Returns if any typeDefs have attributes which are not allowed to be used outside NetworkBehaviour.
+        /// </summary>
+        /// <param name="typeDefs"></param>
+        /// <returns></returns>
+        internal bool NonNetworkBehaviourHasInvalidAttributes(Collection<TypeDefinition> typeDefs)
+        {
+            bool error = false;
+            foreach (TypeDefinition typeDef in typeDefs)
+            {
+                //Inherits, don't need to check.
+                if (typeDef.InheritsNetworkBehaviour())
+                    continue;
+
+                //Check each method for attribute.
+                foreach (MethodDefinition md in typeDef.Methods)
+                {
+                    //Has RPC attribute but doesn't inherit from NB.
+                    if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(md, out _) != null)
+                    {
+                        CodegenSession.Diagnostics.AddError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
+                        error = true;
+                    }
+                }
+                //Check fields for attribute.
+                foreach (FieldDefinition fd in typeDef.Fields)
+                {
+                    if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd) != SyncType.Unset)
+                    {
+                        CodegenSession.Diagnostics.AddError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
+                        error = true;
+                    }
+                }
+            }
+            
+            return error;
+        }
 
         /// <summary>
         /// Gets the top-most parent away method.
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        private MethodDefinition GetChildMostAwakeMethodDefinition(TypeDefinition typeDef)
+        private void CallBaseAwakeMethods(TypeDefinition firstTypeDef)
         {
-            while (typeDef != null)
+            TypeDefinition copyTypeDef = firstTypeDef;
+
+            do
             {
-                MethodDefinition methodDef = typeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
-                if (methodDef != null)
-                    return methodDef;
+                //No more awakes to call.
+                if (!copyTypeDef.CanProcessBaseType())
+                    return;
 
-                if (typeDef.NonNetworkBehaviourBaseType())
-                    typeDef = typeDef.BaseType.Resolve();
-                else
-                    typeDef = null;
-            }
+                /* Awake will always exist because it was added previously.
+                 * Get awake for copy and base of copy. */
+                MethodDefinition copyAwakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.Resolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                MethodReference baseAwakeMethodRef = CodegenSession.Module.ImportReference(baseAwakeMethodDef);
 
-            //Fall through.
-            return null;
+                //Call base awake method ref.
+                ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();
+                //Create instructions for base call.
+                List<Instruction> instructions = new List<Instruction>();
+                instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+                instructions.Add(processor.Create(OpCodes.Call, baseAwakeMethodRef));
+                processor.InsertFirst(instructions);
+
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+            } while (copyTypeDef != null);
+
+        }
+
+
+        /// <summary>
+        /// Calls NetworKInitialize method on the typeDef.
+        /// </summary>
+        /// <param name="copyTypeDef"></param>
+        private void CallNetworkInitializeFromAwake(TypeDefinition startTypeDef)
+        {
+            TypeDefinition copyTypeDef = startTypeDef;
+            do
+            {
+                if (!_processedClasses.Contains(copyTypeDef))
+                {
+                    MethodDefinition initializeMethodDef = copyTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+                    MethodReference initializeMethodRef = CodegenSession.Module.ImportReference(initializeMethodDef);
+
+                    MethodDefinition awakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                    ILProcessor processor = awakeMethodDef.Body.GetILProcessor();
+
+                    List<Instruction> insts = new List<Instruction>();
+                    insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+                    insts.Add(processor.Create(OpCodes.Call, initializeMethodRef));
+                    processor.InsertFirst(insts);
+                }
+
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+            } while (copyTypeDef != null);
         }
 
         /// <summary>
-        /// Creates an 'InitializeNetwork' method which is called by the childmost class to initialize scripts on Awake.
+        /// Creates an 'NetworkInitialize' method which is called by the childmost class to initialize scripts on Awake.
         /// </summary>
-        /// <param name="firstTypeDef"></param>
+        /// <param name="typeDef"></param>
         /// <returns></returns>
-        private List<MethodDefinition> CreateNetworkInitializeMethodDefinitions(TypeDefinition firstTypeDef)
+        private void CreateNetworkInitializeMethod(TypeDefinition typeDef)
         {
-            List<MethodDefinition> methodDefs = new List<MethodDefinition>();
+            MethodDefinition md = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+            if (md != null)
+                return;
 
-            TypeDefinition typeDef = firstTypeDef;
-            while (typeDef != null)
-            {
-                //Create new public virtual method and add it to typedef.
-                MethodDefinition md = new MethodDefinition(NETWORKINITIALIZE_INTERNAL_NAME,
-                    PUBLIC_VIRTUAL_ATTRIBUTES,
-                    typeDef.Module.TypeSystem.Void);
-                typeDef.Methods.Add(md);
-                //Emit ret into new method.
-                ILProcessor processor = md.Body.GetILProcessor();
-                processor.Emit(OpCodes.Ret);
-                //Add to created method refs
-                methodDefs.Add(md);
-
-                if (typeDef.NonNetworkBehaviourBaseType())
-                    typeDef = typeDef.BaseType.Resolve();
-                else
-                    typeDef = null;
-            }
-
-            return methodDefs;
+            //Create new public virtual method and add it to typedef.
+            md = new MethodDefinition(NETWORKINITIALIZE_INTERNAL_NAME,
+                PUBLIC_VIRTUAL_ATTRIBUTES,
+                typeDef.Module.TypeSystem.Void);
+            typeDef.Methods.Add(md);
+            //Emit ret into new method.
+            ILProcessor processor = md.Body.GetILProcessor();
+            processor.Emit(OpCodes.Ret);
         }
 
         /// <summary>
         /// Creates Awake method for and all parents of typeDef using the parentMostAwakeMethodDef as a template.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name="climbTypeDef"></param>
         /// <param name="parentMostAwakeMethodDef"></param>
         /// <returns>True if successful.</returns>
-        private bool MakeAwakeMethodsPublicVirtual(TypeDefinition typeDef)
+        private bool CreateOrModifyAwakeMethods(TypeDefinition typeDef)
         {
-            while (typeDef != null)
+            TypeDefinition copyTypeDef = typeDef;
+            do
             {
-                MethodDefinition tmpMd = typeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                MethodDefinition tmpMd = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
+                //Exist, make it public virtual.
                 if (tmpMd != null)
                 {
-                    if (tmpMd.ReturnType != typeDef.Module.TypeSystem.Void)
+                    if (tmpMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
                     {
                         CodegenSession.Diagnostics.AddError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
                     tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
                 }
-
-                if (typeDef.NonNetworkBehaviourBaseType())
-                    typeDef = typeDef.BaseType.Resolve();
+                //Does not exist, add it.
                 else
-                    typeDef = null;
-            }
+                {
+                    tmpMd = new MethodDefinition(ObjectHelper.AWAKE_METHOD_NAME, PUBLIC_VIRTUAL_ATTRIBUTES, CodegenSession.Module.TypeSystem.Void);
+                    copyTypeDef.Methods.Add(tmpMd);
+                    ILProcessor processor = tmpMd.Body.GetILProcessor();
+                    processor.Emit(OpCodes.Ret);
+                }
+
+                copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+
+            } while (copyTypeDef != null);
+
 
             return true;
         }
 
-        /// <summary>
-        /// Makes all NetworkInitialize methods within typeDef call their inherited siblings.
-        /// </summary>
-        /// <param name="typeDef"></param>
-        internal void CreateNetworkInitializeBaseCalls(TypeDefinition typeDef, List<MethodDefinition> networkInitializeMethodDefs, int lstIndex)
-        {
-            //On last method, nothing up to call.
-            if (lstIndex >= (networkInitializeMethodDefs.Count - 1))
-                return;
+        ///// <summary>
+        ///// Makes all NetworkInitialize methods within typeDef call their inherited siblings.
+        ///// </summary>
+        ///// <param name="copyTypeDef"></param>
+        //internal void CreateNetworkInitializeBaseCalls(TypeDefinition typeDef)
+        //{
+        //    //return;
+        //    /* Go up the hierarchy and call every inherited networkinitialize.
+        //     * Every class gets one so they should never be missing. */
+        //    TypeDefinition copyTypeDef = typeDef;
 
-            MethodDefinition md = networkInitializeMethodDefs[lstIndex];
-            //MethodRef to call for base call.
-            MethodReference mr = typeDef.Module.ImportReference(networkInitializeMethodDefs[lstIndex + 1]);
+        //    do
+        //    {
+        //        if (copyTypeDef.CanProcessBaseType())
+        //        {
+        //            TypeDefinition baseTypeDef = copyTypeDef.BaseType.Resolve();
+        //            MethodDefinition baseInitializeMethodDef = baseTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+        //            MethodDefinition copyInitializeMethodDef = copyTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+        //            MethodReference baseMethodRef = CodegenSession.Module.ImportReference(baseInitializeMethodDef);
+        //            ILProcessor processor = copyInitializeMethodDef.Body.GetILProcessor();
 
-            ILProcessor processor = md.Body.GetILProcessor();
-            //Create instructions for base call.
-            List<Instruction> instructions = new List<Instruction>();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Call, mr));
+        //            //Create instructions for base call.
+        //            List<Instruction> instructions = new List<Instruction>();
+        //            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+        //            instructions.Add(processor.Create(OpCodes.Call, baseMethodRef));
+        //            processor.InsertFirst(instructions);
 
-            processor.InsertFirst(instructions);
+        //            /* If the base class has already been processed then exit because
+        //            * its base calls have already been added. This can be
+        //            * when a class is inherited by a variety of others. Therefor
+        //            * there is no reason to keep going. */
+        //            if (HasClassBeenProcessed(baseTypeDef))
+        //                return;
+        //        }
+        //        copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
+        //    } while (copyTypeDef != null);
 
-            //Call again with typeDef from next method.
-            if (typeDef.NonNetworkBehaviourBaseType())
-                CreateNetworkInitializeBaseCalls(typeDef.BaseType.Resolve(), networkInitializeMethodDefs, lstIndex + 1);
-        }
+        //}
 
 
         /// <summary>
@@ -229,62 +347,37 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates a call to NetworkBehaviour to register RPC count.
         /// </summary>
-        internal void CreateRegisterRpcCount(TypeDefinition typeDef, int allRpcCount)
+        internal void CreateRegisterRpcCount(TypeDefinition typeDef, int allRpcCount) //fix
         {
-            MethodDefinition methodDef = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+            //if (HasClassBeenProcessed(typeDef))
+            //    return;
 
-            //Insert at the beginning to ensure user code doesn't return out of it.
-            ILProcessor processor = methodDef.Body.GetILProcessor();
+            //MethodDefinition methodDef = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
 
-            List<Instruction> instructions = new List<Instruction>();
-            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)allRpcCount));
-            instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetRpcMethodCountInternal_MethodRef));
+            ////Insert at the beginning to ensure user code doesn't return out of it.
+            //ILProcessor processor = methodDef.Body.GetILProcessor();
 
-
-            //SetGivenName debug.
-            //System.Type networkBehaviourType = typeof(NetworkBehaviour);
-            //TypeReference trr = typeDef.module.ImportReference(networkBehaviourType);
-            //MethodDefinition mrd = trr.Resolve().GetMethod("SetGivenName");
-            //MethodReference mrr = typeDef.module.ImportReference(mrd);
-            //instructions.Add(processor.Create(OpCodes.Ldarg_0));
-            //instructions.Add(processor.Create(OpCodes.Ldstr, typeDef.Name));
-            //instructions.Add(processor.Create(OpCodes.Call, mrr));
+            //List<Instruction> instructions = new List<Instruction>();
+            //instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+            //instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)allRpcCount));
+            //instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_SetRpcMethodCountInternal_MethodRef));
 
 
-            processor.InsertFirst(instructions);
+            ////SetGivenName debug.
+            ////System.Type networkBehaviourType = typeof(NetworkBehaviour);
+            ////TypeReference trr = typeDef.module.ImportReference(networkBehaviourType);
+            ////MethodDefinition mrd = trr.Resolve().GetMethod("SetGivenName");
+            ////MethodReference mrr = typeDef.module.ImportReference(mrd);
+            ////instructions.Add(processor.Create(OpCodes.Ldarg_0));
+            ////instructions.Add(processor.Create(OpCodes.Ldstr, typeDef.Name));
+            ////instructions.Add(processor.Create(OpCodes.Call, mrr));
+
+
+            //processor.InsertFirst(instructions);
         }
 
 
-        /// <summary>
-        /// Returns methods which may be modified by code generation.
-        /// </summary>
-        /// <param name="typeDef"></param>
-        /// <returns></returns>
-        private List<MethodDefinition> GetModifiableMethods(TypeDefinition typeDef)
-        {
-            List<MethodDefinition> results = new List<MethodDefinition>();
-            //Typical methods.
-            foreach (MethodDefinition methodDef in typeDef.Methods)
-            {
-                if (methodDef.Name == ".cctor")
-                    continue;
-                if (methodDef.IsConstructor)
-                    continue;
 
-                results.Add(methodDef);
-            }
-            //Accessors.
-            foreach (PropertyDefinition propertyDef in typeDef.Properties)
-            {
-                if (propertyDef.GetMethod != null)
-                    results.Add(propertyDef.GetMethod);
-                if (propertyDef.SetMethod != null)
-                    results.Add(propertyDef.SetMethod);
-            }
-
-            return results;
-        }
 
     }
 }

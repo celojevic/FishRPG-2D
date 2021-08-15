@@ -23,7 +23,8 @@ public class UIPlayerVitalBar : MonoBehaviour
     private void OnDestroy()
     {
         UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
-        _vital.OnVitalChanged -= Vital_OnVitalChanged;
+        if (_vital)
+            _vital.OnVitalChanged -= Vital_OnVitalChanged;
     }
 
     private void UiManager_OnPlayerAssigned()

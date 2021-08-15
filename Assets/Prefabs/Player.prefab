@@ -176,7 +176,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxVital: 50
-  MinVital: 0
 --- !u!114 &5217560525798398772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,7 +189,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxVital: 50
-  MinVital: 0
 --- !u!114 &4576581613593028737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -232,7 +230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db76fb2534930cf45aa4dad988acfcd3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _getAxisRaw: 0
+  _getAxisRaw: 1
 --- !u!114 &3398067251602312817
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -245,6 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d293d661f937ad84f856ac16f7ea0592, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _interactKey: 102
 --- !u!114 &6787471158684533656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -389,7 +388,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefabId: 0
+  NetworkObserver: {fileID: 0}
+  _prefabId: 4
   _scenePathHash: 584410112
   _sceneId: 0
   SceneTransformProperties:
