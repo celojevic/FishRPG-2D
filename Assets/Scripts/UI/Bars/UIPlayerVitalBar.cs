@@ -5,7 +5,6 @@ using UnityEngine.UI;
 public class UIPlayerVitalBar : MonoBehaviour
 {
 
-    [SerializeField] private VitalType _vitalType;
     [SerializeField] private Image _fillImage = null;
 
     [Header("Numbers")]

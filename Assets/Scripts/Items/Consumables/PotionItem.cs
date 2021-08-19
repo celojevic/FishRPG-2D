@@ -23,6 +23,7 @@ public class PotionItem : ConsumableItem
                     if (vital && vital.CurrentVital != vital.MaxVital)
                     {
                         vital.Add(item.Amount);
+                        PlayerMessageHandler.SendPlayerMsg(user.Owner, MessageType.Action, $"+{item.Amount}", Color.green);
                     }
                     else
                     {

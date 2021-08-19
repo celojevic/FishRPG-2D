@@ -65,12 +65,22 @@ public class VitalBase : NetworkBehaviour
     public void Add(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital + amount, _minVital, MaxVital);
+
+        if (this is Health)
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", Color.green);
+        else if (this is Mana)
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", Color.cyan);
     }
 
     [Server]
     public void Subtract(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital - amount, _minVital, MaxVital);
+
+        if (this is Health)
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", Color.red);
+        else if (this is Mana)
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", Color.magenta);
 
         if (CurrentVital == _minVital)
             OnDepleted?.Invoke();
