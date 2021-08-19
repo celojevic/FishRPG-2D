@@ -45,4 +45,12 @@ public class Player : NetworkBehaviour
         return null;
     }
 
+    public VitalType GetVitalType(int index)
+    {
+        if (Vitals[index] is Health) return VitalType.Health;
+        if (Vitals[index] is Mana) return VitalType.Mana;
+
+        return VitalType.Count;
+    }
+
 }

@@ -82,4 +82,7 @@ public enum VitalType
 {
     Health,
     Mana,
+
+    // KEEP LAST
+    Count
 }

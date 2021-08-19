@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,30 +14,28 @@ public class UIPlayerVitalBar : MonoBehaviour
 
     private VitalBase _vital;
 
-    private void Awake()
-    {
-        UiManager.OnPlayerAssigned += UiManager_OnPlayerAssigned;
-    }
-
     private void OnDestroy()
     {
-        UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
         if (_vital)
             _vital.OnVitalChanged -= Vital_OnVitalChanged;
     }
 
-    private void UiManager_OnPlayerAssigned()
+    public void Setup(VitalBase vital)
     {
         if (UiManager.Player != null)
         {
-            _vital = UiManager.Player.GetVital(_vitalType);
+            _vital = vital;
             _vital.OnVitalChanged += Vital_OnVitalChanged;
+
+            if (_vital is Health)
+                _fillImage.color = Color.red;
+            else if (_vital is Mana)
+                _fillImage.color = Color.cyan;
 
             UpdateBar();
         }
         else
         {
-            UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
             _vital.OnVitalChanged -= Vital_OnVitalChanged;
         }
     }
