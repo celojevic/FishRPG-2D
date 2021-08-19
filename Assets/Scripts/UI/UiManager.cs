@@ -54,6 +54,8 @@ public class UiManager : MonoBehaviour
 
     private void Update()
     {
+        if (Player == null) return;
+
         if (Input.GetKeyDown(_closeWindowKey))
         {
             CloseLastWindow();

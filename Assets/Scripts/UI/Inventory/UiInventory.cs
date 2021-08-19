@@ -34,9 +34,11 @@ public class UiInventory : UiPanel
 
         UiManager.Player.Inventory.OnItemChanged += Inventory_OnItemChanged;
     }
+
     private void OnDestroy()
     {
-        UiManager.Player.Inventory.OnItemChanged -= Inventory_OnItemChanged;
+        if (UiManager.Player)
+            UiManager.Player.Inventory.OnItemChanged -= Inventory_OnItemChanged;
     }
 
     private void Inventory_OnItemChanged()
