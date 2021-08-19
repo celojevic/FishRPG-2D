@@ -8,6 +8,8 @@ public class ItemBase : ScriptableObject, IStringBuilder
     [Header("Base")]
     public Guid Guid = Guid.NewGuid();
     public Sprite Sprite;
+    [Range(0, 100)]
+    public byte LevelReq;
 
     [TextArea(3, 20)]
     public string Description;

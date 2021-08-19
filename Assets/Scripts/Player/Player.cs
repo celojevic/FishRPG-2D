@@ -4,6 +4,11 @@ using UnityEngine;
 public class Player : NetworkBehaviour
 {
 
+    [Header("Data")]
+    public ClassBase Class;
+    private byte _appearanceIndex = 0;
+
+    [Header("Components")]
     public PlayerInput Input;
     public PlayerInventory Inventory;
     public PlayerMovement Movement;
@@ -20,6 +25,14 @@ public class Player : NetworkBehaviour
 
         Vitals = GetComponents<VitalBase>();
     }
+
+    #region Class
+
+    public ClassAppearance GetAppearance() => Class.Appearances[_appearanceIndex];
+
+    #endregion
+
+    #region Vitals
 
     public VitalBase GetVital(VitalType type)
     {
@@ -52,5 +65,7 @@ public class Player : NetworkBehaviour
 
         return VitalType.Count;
     }
+
+    #endregion
 
 }

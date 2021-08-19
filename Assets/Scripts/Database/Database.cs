@@ -22,8 +22,19 @@ public class Database : MonoBehaviour
 
     #endregion
 
+    #region Items
+
     public List<ItemBase> ItemBases = new List<ItemBase>();
     public ItemBase GetItemBase(Guid guid) => ItemBases.Find(item => item.Guid == guid);
+
+    #endregion
+
+    #region Classes
+
+    public List<ClassBase> Classes = new List<ClassBase>();
+
+    #endregion
+
 
 }
 
@@ -51,7 +62,7 @@ public class DatabaseEditor : Editor
     void UpdateDatabase()
     {
         _db.ItemBases = EditorUtils.FindScriptableObjects<ItemBase>();
-        
+        _db.Classes = EditorUtils.FindScriptableObjects<ClassBase>();
     }
 
 

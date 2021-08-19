@@ -5,14 +5,11 @@ using UnityEngine;
 public class PlayerVisuals : NetworkBehaviour
 {
 
-    private enum Animation
-    {
-        Idle, 
-        Walk
-    }
-
     [SerializeField] private SpriteRenderer _sr = null;
 
+    /// <summary>
+    /// The master Player script.
+    /// </summary>
     private Player _player;
     private Animation _currentAnimation;
     private NetworkAnimator _netAnimator;
@@ -23,6 +20,16 @@ public class PlayerVisuals : NetworkBehaviour
         _netAnimator = GetComponent<NetworkAnimator>();
         if (_sr == null)
             GetComponentInChildren<SpriteRenderer>();
+        AssignClassData();
+    }
+
+    void AssignClassData()
+    {
+        if (_player.Class == null) return;
+
+        var app = _player.GetAppearance();
+        _sr.sprite = app.Sprite;
+        _netAnimator.SetController(app.Controller);
     }
 
     private void Update()
@@ -70,6 +77,12 @@ public class PlayerVisuals : NetworkBehaviour
 
         _currentAnimation = animation;
         _netAnimator.Play(animation.ToString());
+    }
+
+    private enum Animation : byte
+    {
+        Idle,
+        Walk
     }
 
 }
