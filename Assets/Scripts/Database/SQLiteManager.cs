@@ -1,5 +1,7 @@
 using Mono.Data.Sqlite;
 using UnityEngine;
+using System.Security.Cryptography;
+using System.Data;
 
 public class SQLiteManager : MonoBehaviour
 {
@@ -12,6 +14,33 @@ public class SQLiteManager : MonoBehaviour
 
         AddAccount("gooby", "gooby");
 
+        GetAccount();
+    }
+
+    void GetAccount()
+    {
+
+        using (var conn = new SqliteConnection(_dbName))
+        {
+            conn.Open();
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT * FROM accounts;";
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Debug.Log($"Username: {reader["username"]}+\nPassword: {reader["password"]}");
+                    }
+
+                    reader.Close();
+                }
+            }
+
+            conn.Close();
+        }
     }
 
     void AddAccount(string username, string password)

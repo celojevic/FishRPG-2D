@@ -75,7 +75,6 @@ namespace FishNet.Object
         /// <param name="conn">Connection spawn was sent to.</param>
         internal void InvokeOnServerSpawn(NetworkConnection conn)
         {
-            Debug.Log("OK");
             OnSpawnServer?.Invoke(conn);
         }
         /// <summary>

@@ -100,6 +100,8 @@ public class Inventory : NetworkBehaviour
 
     #endregion
 
+
+
     #region Helper Functions
 
     bool HasItem(NetItem item)

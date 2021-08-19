@@ -12,14 +12,23 @@ public class PotionItem : ConsumableItem
     public event Action OnUse;
 
     [Server]
-    public override void Use(Player user)
+    public override bool Use(Player user)
     {
         foreach (var item in Effects)
         {
             switch (item.Adjustment)
             {
                 case AdjustOp.Add:
-                    user.GetVital(item.Vital).Add(item.Amount);
+                    VitalBase vital = user.GetVital(item.Vital);
+                    if (vital && vital.CurrentVital != vital.MaxVital)
+                    {
+                        vital.Add(item.Amount);
+                    }
+                    else
+                    {
+                        Debug.Log("Already at max health!");
+                        return false;
+                    }
                     break;
 
                 case AdjustOp.Subtract:
@@ -27,11 +36,12 @@ public class PotionItem : ConsumableItem
                     break;
 
                 default:
-                    return;
+                    return false;
             }
         }
 
         OnUse?.Invoke();
+        return true;
     }
 
     public override string BuildString()

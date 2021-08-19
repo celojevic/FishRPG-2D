@@ -983,6 +983,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -683131249300740242, guid: 4d15745d8f0c2e94891c97ed189cd8e3, type: 3}
+      propertyPath: _sceneId
+      value: 2510022321208703573
+      objectReference: {fileID: 0}
+    - target: {fileID: -683131249300740242, guid: 4d15745d8f0c2e94891c97ed189cd8e3, type: 3}
+      propertyPath: _scenePathHash
+      value: 584410112
+      objectReference: {fileID: 0}
     - target: {fileID: 4487084268317562470, guid: 4d15745d8f0c2e94891c97ed189cd8e3, type: 3}
       propertyPath: m_Name
       value: Mana Fountain
@@ -5259,6 +5267,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5934857483007060649, guid: 7a696496510bbc445acdac26928cc8ab, type: 3}
+      propertyPath: _sceneId
+      value: 2510022320103006004
+      objectReference: {fileID: 0}
+    - target: {fileID: -5934857483007060649, guid: 7a696496510bbc445acdac26928cc8ab, type: 3}
+      propertyPath: _scenePathHash
+      value: 584410112
+      objectReference: {fileID: 0}
     - target: {fileID: 4487084268317562470, guid: 7a696496510bbc445acdac26928cc8ab, type: 3}
       propertyPath: m_Name
       value: Health Fountain

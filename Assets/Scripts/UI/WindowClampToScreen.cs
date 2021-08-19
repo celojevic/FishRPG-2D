@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WindowClampToScreen : MonoBehaviour
@@ -21,7 +19,7 @@ public class WindowClampToScreen : MonoBehaviour
             _rectTransform.anchoredPosition.y - _rectTransform.sizeDelta.y / 2f,
             Screen.width);
 
-        Debug.Log(_rectTransform.sizeDelta);
+        //Debug.Log(_rectTransform.sizeDelta);
         _rectTransform.anchoredPosition = new Vector2(x, y);
     }
 

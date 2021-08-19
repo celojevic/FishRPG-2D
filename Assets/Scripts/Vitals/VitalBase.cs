@@ -65,7 +65,6 @@ public class VitalBase : NetworkBehaviour
     public void Add(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital + amount, _minVital, MaxVital);
-        Debug.Log(CurrentVital);
     }
 
     [Server]

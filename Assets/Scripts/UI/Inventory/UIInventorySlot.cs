@@ -56,7 +56,7 @@ public class UIInventorySlot : UISlot
         base.HandleRightClick();
         if (!HasItem()) return;
 
-        Debug.Log("used");
+        _uiInventory.UseItemInSlot(_myIndex);
     }
 
 }

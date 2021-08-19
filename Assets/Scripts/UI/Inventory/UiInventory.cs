@@ -86,4 +86,9 @@ public class UiInventory : UiPanel
         _slotLayoutGroup.constraintCount = _invData.UIData.ConstraintCount;
     }
 
+    public void UseItemInSlot(int slotIndex)
+    {
+        UiManager.Player.Inventory.CmdUseItem(slotIndex);
+    }
+
 }
