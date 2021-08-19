@@ -38,6 +38,10 @@ namespace FishNet.Object
         /// ClientId for this NetworkObject owner. Only visible to server.
         /// </summary>
         public int OwnerId => (!OwnerIsValid) ? -1 : Owner.ClientId;
+        /// <summary>
+        /// Returns if this object is spawned.
+        /// </summary>
+        public bool IsSpawned => (!Deinitializing && ObjectId >= 0);
         #endregion
 
         /// <summary>

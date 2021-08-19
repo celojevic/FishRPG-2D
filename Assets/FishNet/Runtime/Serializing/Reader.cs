@@ -671,7 +671,7 @@ namespace FishNet.Serializing
                 return null;
 
             NetworkObject result;
-            if (_networkManager.ServerManager.Active)
+            if (_networkManager.ServerManager.Started)
                 _networkManager.ServerManager.Objects.Spawned.TryGetValue(objectId, out result);
             else
                 _networkManager.ClientManager.Objects.Spawned.TryGetValue(objectId, out result);

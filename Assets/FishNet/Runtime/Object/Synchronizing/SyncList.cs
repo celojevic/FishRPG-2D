@@ -129,6 +129,12 @@ namespace FishNet.Object.Synchronizing
         /// <param name="next"></param>
         private void AddOperation(SyncListOperation operation, int index, T prev, T next)
         {
+            /* Only check this if NetworkBehaviour is set.
+             * It may not be set if results are being populated
+             * in Awake. */
+            if (base.NetworkBehaviour == null)
+                return;
+
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
                 Debug.LogWarning($"Cannot complete operation {operation} as server when server is not active.");

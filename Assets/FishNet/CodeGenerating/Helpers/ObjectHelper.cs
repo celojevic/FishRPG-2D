@@ -186,33 +186,38 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name="rpcType"></param>
         internal void CreateRpcDelegate(ILProcessor processor, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, RpcType rpcType, int allRpcCount)
         {
-            processor.Emit(OpCodes.Ldarg_0);
+            List<Instruction> insts = new List<Instruction>();
+            insts.Add(processor.Create(OpCodes.Ldarg_0));
 
             uint methodHash = originalMethodDef.FullName.GetStableHash32();
-            processor.Emit(OpCodes.Ldc_I4, (int)methodHash);
+            insts.Add(processor.Create(OpCodes.Ldc_I4, (int)methodHash));
             //processor.Emit(OpCodes.Ldc_I4, allRpcCount);
 
             /* Create delegate and call NetworkBehaviour method. */
-            processor.Emit(OpCodes.Ldnull);
-            processor.Emit(OpCodes.Ldftn, readerMethodDef);
+            insts.Add(processor.Create(OpCodes.Ldnull));
+            insts.Add(processor.Create(OpCodes.Ldftn, readerMethodDef));
             //Server.
             if (rpcType == RpcType.Server)
             {
-                processor.Emit(OpCodes.Newobj, Networkbehaviour_ServerRpcDelegateDelegateConstructor_MethodRef);
-                processor.Emit(OpCodes.Call, NetworkBehaviour_CreateServerRpcDelegate_MethodRef);
+                insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ServerRpcDelegateDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateServerRpcDelegate_MethodRef));
             }
             //Observers.
             else if (rpcType == RpcType.Observers)
             {
-                processor.Emit(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef);
-                processor.Emit(OpCodes.Call, NetworkBehaviour_CreateObserversRpcDelegate_MethodRef);
+                insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateObserversRpcDelegate_MethodRef));
             }
             //Target
             else if (rpcType == RpcType.Target)
             {
-                processor.Emit(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef);
-                processor.Emit(OpCodes.Call, NetworkBehaviour_CreateTargetRpcDelegate_MethodRef);
+                insts.Add(processor.Create(OpCodes.Newobj, Networkbehaviour_ClientRpcDelegateDelegateConstructor_MethodRef));
+                insts.Add(processor.Create(OpCodes.Call, NetworkBehaviour_CreateTargetRpcDelegate_MethodRef));
             }
+
+            /* Has to be done last. This allows the NetworkBehaviour to
+             * initialize it's fields first. */
+            processor.InsertLast(insts);
         }
 
         /// <summary>

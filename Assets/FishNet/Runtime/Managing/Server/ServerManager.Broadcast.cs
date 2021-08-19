@@ -111,7 +111,7 @@ namespace FishNet.Managing.Server
                 if (requireAuthentication && !connection.Authenticated)
                 {
                     Debug.LogWarning($"ClientId {connection.ClientId} sent broadcast {typeof(T).Name} which requires authentication, but client was not authenticated. Client has been disconnected.");
-                    NetworkManager.TransportManager.Transport.StopConnection(connection.ClientId, false);
+                    NetworkManager.TransportManager.Transport.StopConnection(connection.ClientId, true);
                     return;
                 }
 
@@ -153,11 +153,13 @@ namespace FishNet.Managing.Server
         /// Sends a Broadcast to connection.
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="connection"></param>
         /// <param name="message"></param>
+        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
         /// <param name="channel"></param>
         public void Broadcast<T>(NetworkConnection connection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!Active)
+            if (!Started)
             {
                 Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
@@ -167,6 +169,7 @@ namespace FishNet.Managing.Server
                 Debug.LogWarning($"Cannot send broadcast to client because they are not authenticated.");
                 return;
             }
+
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
@@ -178,11 +181,13 @@ namespace FishNet.Managing.Server
         /// Sends a Broadcast to connections.
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="connections"></param>
         /// <param name="message"></param>
+        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
         /// <param name="channel"></param>
         public void Broadcast<T>(HashSet<NetworkConnection> connections, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!Active)
+            if (!Started)
             {
                 Debug.LogError($"Cannot send broadcast to client because server is not active.");
                 return;
@@ -192,13 +197,13 @@ namespace FishNet.Managing.Server
             using (PooledWriter writer = WriterPool.GetWriter())
             {
                 ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
-                //Send to connections.
+                //
                 foreach (NetworkConnection conn in connections)
                 {
                     if (requireAuthenticated && !conn.Authenticated)
                         failedAuthentication = true;
                     else
-                        NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
+                        NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
                 }
             }
 
@@ -213,30 +218,19 @@ namespace FishNet.Managing.Server
         /// Sends a Broadcast to observers for networkObject.
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="networkObject"></param>
         /// <param name="message"></param>
+        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
         /// <param name="channel"></param>
         public void Broadcast<T>(NetworkObject networkObject, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!Active)
-            {
-                Debug.LogWarning($"Cannot send broadcast to client because server is not active.");
-                return;
-            }
             if (networkObject == null)
             {
                 Debug.LogWarning($"Cannot send broadcast because networkObject is null.");
                 return;
             }
 
-            using (PooledWriter writer = WriterPool.GetWriter())
-            {
-                ArraySegment<byte> segment = GetBroadcastArraySegment<T>(writer, message);
-
-                //if (networkObject.UsingObservers)
-                    Broadcast(networkObject.Observers, message, requireAuthenticated, channel);
-                //else
-                    //Broadcast(message, requireAuthenticated, channel);
-            }
+            Broadcast(networkObject.Observers, message, requireAuthenticated, channel);
         }
 
 
@@ -245,10 +239,11 @@ namespace FishNet.Managing.Server
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
+        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(T message, bool requireAuthenticated = true,  Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!Active)
+            if (!Started)
             {
                 Debug.LogError($"Cannot send broadcast to client because server is not active.");
                 return;
@@ -261,10 +256,11 @@ namespace FishNet.Managing.Server
                 //Send to connections.
                 foreach (NetworkConnection conn in Clients.Values)
                 {
+                    //
                     if (requireAuthenticated && !conn.Authenticated)
                         failedAuthentication = true;
                     else
-                        NetworkManager.TransportManager.Transport.SendToClient((byte)channel, writer.GetArraySegment(), conn.ClientId);
+                        NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
                 }
             }
 

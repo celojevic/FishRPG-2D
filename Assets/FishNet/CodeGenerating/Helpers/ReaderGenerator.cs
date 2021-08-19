@@ -6,6 +6,7 @@ using Mono.Cecil.Cil;
 using FishNet.CodeGenerating.Helping.Extension;
 using Unity.CompilationPipeline.Common.Diagnostics;
 using FishNet.Object;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
@@ -103,9 +104,10 @@ namespace FishNet.CodeGenerating.Helping
             ParameterDefinition readerParameterDef = createdReaderMethodDef.Parameters[0];
             //reader.ReadXXX().
             processor.Emit(OpCodes.Ldarg, readerParameterDef);
-            processor.Emit(OpCodes.Call, readMethodRef);
             if (CodegenSession.WriterHelper.IsAutoPackedType(underlyingTypeRef))
                 processor.Emit(OpCodes.Ldc_I4, (int)AutoPackType.Packed);
+
+            processor.Emit(OpCodes.Call, readMethodRef);
 
             processor.Emit(OpCodes.Ret);
             return createdReaderMethodDef;

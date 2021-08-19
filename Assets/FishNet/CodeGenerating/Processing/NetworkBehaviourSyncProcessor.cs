@@ -81,7 +81,6 @@ namespace FishNet.CodeGenerating.Processing
 
             if (modified)
             {
-                InitializeSyncCollections(typeDef);
                 List<MethodDefinition> modifiableMethods = GetModifiableMethods(typeDef);
                 ReplaceGetSets(modifiableMethods, allProcessedSyncs);
             }
@@ -111,84 +110,6 @@ namespace FishNet.CodeGenerating.Processing
 
             //Fall through.
             return SyncType.Unset;
-        }
-
-
-        /// <summary>
-        /// Creates the SyncVarCollection field if not already made.
-        /// </summary>
-        private void TryCreateSyncVarCollection(TypeDefinition typeDef)
-        {
-            if (_syncVarCollection != null)
-                return;
-
-            System.Type t = typeof(Dictionary<ushort, SyncBase>);
-            TypeReference dictTypeRef = CodegenSession.Module.ImportReference(t);
-            FieldDefinition fd = new FieldDefinition("_syncVarCollection", (FieldAttributes.Private | FieldAttributes.NotSerialized), dictTypeRef);
-            typeDef.Fields.Add(fd);
-            _syncVarCollection = CodegenSession.Module.ImportReference(fd);
-        }
-
-
-        /// <summary>
-        /// Creates the SyncVarCollection field if not already made.
-        /// </summary>
-        private void TryCreateSyncObjectCollection(TypeDefinition typeDef)
-        {
-            if (_syncVarCollection != null)
-                return;
-
-            System.Type t = typeof(Dictionary<ushort, int>);// SyncBase>);
-            TypeReference dictTypeRef = CodegenSession.Module.ImportReference(t);
-            FieldDefinition fd = new FieldDefinition("_syncObjectCollection", (FieldAttributes.Private), dictTypeRef);
-            typeDef.Fields.Add(fd);
-            _syncObjectCollection = CodegenSession.Module.ImportReference(fd);
-        }
-
-
-        /// <summary>
-        /// Initializes SyncVar/SyncObjectCollection if the fields exist.
-        /// </summary>
-        private void InitializeSyncCollections(TypeDefinition typeDef) //fix probably wont be used
-        {
-            //TypeReference ushortTypeRef = CodegenSession.GeneralHelper.GetTypeReference(typeof(ushort));
-            //TypeReference syncBaseTypeRef = CodegenSession.GeneralHelper.GetTypeReference(typeof(SyncBase));
-
-            //System.Type dictType = typeof(Dictionary<ushort, SyncBase>);
-            //TypeReference dictTypeRef = CodegenSession.Module.ImportReference(dictType);
-
-            //GenericInstanceType git = dictTypeRef.Resolve().MakeGenericInstanceType(ushortTypeRef, syncBaseTypeRef);
-
-            //MethodDefinition constructorMethodDef = git.ResolveDefaultPublicConstructor();
-            //MethodReference mr = CodegenSession.Module.ImportReference(constructorMethodDef);
-
-            //MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
-            //ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
-
-            ///* Must be initialized at the top so
-            // * entries can be added later in this method. */
-
-            ////IL_0000: ldarg.0
-            ////IL_0001: newobj instance void class [System.Private.CoreLib] System.Collections.Generic.Dictionary`2<uint16, int32>::.ctor()
-            ////IL_0006: stfld class [System.Private.CoreLib] System.Collections.Generic.Dictionary`2<uint16, int32> C::_w
-
-            //List<Instruction> instructions = new List<Instruction>();
-            ////SyncVars.
-            //if (_syncVarCollection != null)
-            //{
-            //    instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            //    instructions.Add(processor.Create(OpCodes.Newobj, mr));
-            //    instructions.Add(processor.Create(OpCodes.Stfld, _syncVarCollection));
-            //}
-            ////SyncObjects
-            //if (_syncObjectCollection != null)
-            //{
-            //    instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            //    instructions.Add(processor.Create(OpCodes.Newobj, mr));
-            //    instructions.Add(processor.Create(OpCodes.Stfld, _syncObjectCollection));
-            //}
-
-            //processor.InsertFirst(instructions);
         }
 
         /// <summary>
@@ -659,9 +580,8 @@ namespace FishNet.CodeGenerating.Processing
                 channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
             }
 
-            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
-            ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
-
+            MethodDefinition injectionMethodDef;
+            ILProcessor processor;
             List<Instruction> instructions = new List<Instruction>();
 
             //This import shouldn't be needed but cecil is stingy so rather be safe than sorry.
@@ -675,6 +595,9 @@ namespace FishNet.CodeGenerating.Processing
             MethodReference setSyncIndexMethodRef = CodegenSession.Module.ImportReference(setSyncIndexMethodInfo);
 
             /* Initialize with attribute settings. */
+            injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
+             processor= injectionMethodDef.Body.GetILProcessor();
+            //
             System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod("InitializeInstanceInternal");
             MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
@@ -685,16 +608,21 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)channel));
             instructions.Add(processor.Create(OpCodes.Ldc_I4_1)); //true for syncObject.
             instructions.Add(processor.Create(OpCodes.Call, initializeInstanceMethodRef));
+            processor.InsertFirst(instructions);
 
-            //Set NetworkBehaviour and SyncIndex to use.
+            instructions.Clear();
+            /* Set NetworkBehaviour and SyncIndex to use. */
+            injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
+            processor = injectionMethodDef.Body.GetILProcessor();
+            //
             uint hash = originalFieldDef.FullName.GetStableHash32();
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
             instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMethodRef));
+            processor.InsertLast(instructions);
 
-            processor.InsertFirst(instructions);
 
             return true;
         }
@@ -723,7 +651,7 @@ namespace FishNet.CodeGenerating.Processing
                 channel = Channel.Reliable; //attribute.GetField("Channel", Channel.Reliable);
             }
 
-            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
+            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
 
             List<Instruction> instructions = new List<Instruction>();
@@ -793,7 +721,7 @@ namespace FishNet.CodeGenerating.Processing
                 return;
             }
 
-            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
+            MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
 
             List<Instruction> instructions = new List<Instruction>();
@@ -815,16 +743,7 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
             instructions.Add(processor.Create(OpCodes.Callvirt, CodegenSession.SyncHandlerGenerator.SyncBase_SetSyncIndex_MethodRef));
-
-            ////Add to syncVarCollection.
-            //instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            //instructions.Add(processor.Create(OpCodes.Ldfld, _syncVarCollection));
-            //instructions.Add(processor.Create(OpCodes.Ldloc, syncIndexVariableDef));
-            //instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-            //instructions.Add(processor.Create(OpCodes.Ldfld, createdFieldDef));
-            //MethodDefinition md = _syncVarCollection.FieldType.Resolve().GetMethod("add_Item");
-            //instructions.Add(processor.Create(OpCodes.Callvirt, CodegenSession.Module.ImportReference(md)));// CodegenSession.ObjectHelper.Dictionary_Add_UShort_SyncBase_MethodRef));
-
+    
             processor.InsertFirst(instructions);
         }
 
@@ -872,7 +791,7 @@ namespace FishNet.CodeGenerating.Processing
                 return;
             if (_createdSyncTypeMethodDefinitions.Contains(methodDef))
                 return;
-            if (methodDef.Name == NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME)
+            if (methodDef.Name == NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME)
                 return;
 
             for (int i = 0; i < methodDef.Body.Instructions.Count; i++)

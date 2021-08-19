@@ -23,10 +23,6 @@ namespace FishNet.Object
         /// <returns></returns>
         public bool SceneObject => (SceneId > 0);
         /// <summary>
-        /// Returns if this object is spawned.
-        /// </summary>
-        public bool IsSpawned => (!Deinitializing && ObjectId >= 0);
-        /// <summary>
         /// Owner of this object. Will be null if there is no owner. Owner is only visible to server.
         /// </summary>
         public NetworkConnection Owner { get; private set; } = null;

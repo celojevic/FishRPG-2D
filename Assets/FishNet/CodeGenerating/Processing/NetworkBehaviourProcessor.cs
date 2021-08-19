@@ -5,6 +5,7 @@ using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -19,13 +20,14 @@ namespace FishNet.CodeGenerating.Processing
         #endregion
 
         #region Const.
-        internal const string NETWORKINITIALIZE_INTERNAL_NAME = "NetworkInitialize___Internal";
+        internal const string NETWORKINITIALIZE_EARLY_INTERNAL_NAME = "NetworkInitialize_Early___Internal";
+        internal const string NETWORKINITIALIZE_LATE_INTERNAL_NAME = "NetworkInitialize_Late___Internal";
         private MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
-        #endregion
+        #endregion 
 
         internal bool Process(TypeDefinition typeDef, ref int allRpcCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, HashSet<string> allProcessedCallbacks)
         {
-            bool modified = false;
+            bool modified = false; 
 
             TypeDefinition copyTypeDef = typeDef;
             TypeDefinition firstTypeDef = typeDef;
@@ -60,18 +62,18 @@ namespace FishNet.CodeGenerating.Processing
 
                 /* Create NetworkInitialize before-hand so the other procesors
                  * can use it. */
-                CreateNetworkInitializeMethod(copyTypeDef);
+                CreateNetworkInitializeMethods(copyTypeDef);
                 modified |= CodegenSession.NetworkBehaviourRpcProcessor.Process(copyTypeDef, ref allRpcCount);
                 modified |= CodegenSession.NetworkBehaviourCallbackProcessor.Process(firstTypeDef, copyTypeDef, allProcessedCallbacks);
                 modified |= CodegenSession.NetworkBehaviourSyncProcessor.Process(copyTypeDef, allProcessedSyncs);
-
+                
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
             } while (copyTypeDef != null);
 
             /* If here then all inerited classes for firstTypeDef have
              * been processed. */
-            //CreateNetworkInitializeBaseCalls(firstTypeDef);
-            CallNetworkInitializeFromAwake(firstTypeDef);
+            CallNetworkInitializeFromAwake(firstTypeDef, true);
+            CallNetworkInitializeFromAwake(firstTypeDef, false);
 
             //Add to processed.
             copyTypeDef = firstTypeDef;
@@ -128,7 +130,7 @@ namespace FishNet.CodeGenerating.Processing
                     }
                 }
             }
-            
+
             return error;
         }
 
@@ -153,13 +155,43 @@ namespace FishNet.CodeGenerating.Processing
                 MethodDefinition baseAwakeMethodDef = copyTypeDef.BaseType.Resolve().GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
                 MethodReference baseAwakeMethodRef = CodegenSession.Module.ImportReference(baseAwakeMethodDef);
 
-                //Call base awake method ref.
                 ILProcessor processor = copyAwakeMethodDef.Body.GetILProcessor();
-                //Create instructions for base call.
-                List<Instruction> instructions = new List<Instruction>();
-                instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-                instructions.Add(processor.Create(OpCodes.Call, baseAwakeMethodRef));
-                processor.InsertFirst(instructions);
+
+                bool alreadyHasBaseCall = false;
+                //Check if already calls baseAwake.
+                foreach (var item in copyAwakeMethodDef.Body.instructions)
+                {
+
+                    //If a call or call virt. Although, callvirt should never occur.
+                    if (item.OpCode == OpCodes.Call || item.OpCode == OpCodes.Callvirt)
+                    {
+                        if (item.Operand != null && item.Operand.GetType().Name == nameof(MethodDefinition))
+                        {
+                            MethodDefinition md = (MethodDefinition)item.Operand;
+                            if (md == baseAwakeMethodDef)
+                            {
+                                alreadyHasBaseCall = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                /* //todo only call awake if client has another awake and don't trickle all the way up hierarchy.
+                 * in the first awake call networkinitialize methods, and have each of them call up the hierarchy
+                 * instead. this is to prevent calling awake where the user may not want to. I cant not call
+                 * awake with the current technique either because this will lead to the networkinitialize methods
+                 * not firing. best option is to call networkinitialize on the child most and awake once from
+                 * child most. */
+
+                if (!alreadyHasBaseCall)
+                {
+                    //Create instructions for base call.
+                    List<Instruction> instructions = new List<Instruction>();
+                    instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
+                    instructions.Add(processor.Create(OpCodes.Call, baseAwakeMethodRef));
+                    processor.InsertFirst(instructions);
+                }
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
             } while (copyTypeDef != null);
@@ -168,17 +200,24 @@ namespace FishNet.CodeGenerating.Processing
 
 
         /// <summary>
-        /// Calls NetworKInitialize method on the typeDef.
+        /// Calls NetworKInitializeLate method on the typeDef.
         /// </summary>
         /// <param name="copyTypeDef"></param>
-        private void CallNetworkInitializeFromAwake(TypeDefinition startTypeDef)
+        private void CallNetworkInitializeFromAwake(TypeDefinition startTypeDef, bool callEarly)
         {
+            /* InitializeLate should be called after the user runs
+             * all their Awake logic. This is so the user can configure
+             * sync types on Awake and it won't trigger those values
+             * as needing to be sent over the network, since both
+             * server and client will be assigning them on Awake. */
             TypeDefinition copyTypeDef = startTypeDef;
             do
             {
                 if (!_processedClasses.Contains(copyTypeDef))
                 {
-                    MethodDefinition initializeMethodDef = copyTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
+                    string methodName = (callEarly) ? NETWORKINITIALIZE_EARLY_INTERNAL_NAME :
+                        NETWORKINITIALIZE_LATE_INTERNAL_NAME;
+                    MethodDefinition initializeMethodDef = copyTypeDef.GetMethod(methodName);
                     MethodReference initializeMethodRef = CodegenSession.Module.ImportReference(initializeMethodDef);
 
                     MethodDefinition awakeMethodDef = copyTypeDef.GetMethod(ObjectHelper.AWAKE_METHOD_NAME);
@@ -187,7 +226,11 @@ namespace FishNet.CodeGenerating.Processing
                     List<Instruction> insts = new List<Instruction>();
                     insts.Add(processor.Create(OpCodes.Ldarg_0)); //this.
                     insts.Add(processor.Create(OpCodes.Call, initializeMethodRef));
-                    processor.InsertFirst(insts);
+
+                    if (callEarly)
+                        processor.InsertFirst(insts);
+                    else
+                        processor.InsertBeforeReturns(insts);
                 }
 
                 copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
@@ -199,20 +242,27 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="typeDef"></param>
         /// <returns></returns>
-        private void CreateNetworkInitializeMethod(TypeDefinition typeDef)
+        private void CreateNetworkInitializeMethods(TypeDefinition typeDef)
         {
-            MethodDefinition md = typeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
-            if (md != null)
-                return;
+            CreateMethod(NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
+            CreateMethod(NETWORKINITIALIZE_LATE_INTERNAL_NAME);
 
-            //Create new public virtual method and add it to typedef.
-            md = new MethodDefinition(NETWORKINITIALIZE_INTERNAL_NAME,
-                PUBLIC_VIRTUAL_ATTRIBUTES,
-                typeDef.Module.TypeSystem.Void);
-            typeDef.Methods.Add(md);
-            //Emit ret into new method.
-            ILProcessor processor = md.Body.GetILProcessor();
-            processor.Emit(OpCodes.Ret);
+            void CreateMethod(string name)
+            {
+                MethodDefinition md = typeDef.GetMethod(name);
+                //Already made.
+                if (md != null)
+                    return;
+
+                //Create new public virtual method and add it to typedef.
+                md = new MethodDefinition(name,
+                    PUBLIC_VIRTUAL_ATTRIBUTES,
+                    typeDef.Module.TypeSystem.Void);
+                typeDef.Methods.Add(md);
+                //Emit ret into new method.
+                ILProcessor processor = md.Body.GetILProcessor();
+                processor.Emit(OpCodes.Ret);
+            }
         }
 
         /// <summary>
@@ -253,45 +303,6 @@ namespace FishNet.CodeGenerating.Processing
 
             return true;
         }
-
-        ///// <summary>
-        ///// Makes all NetworkInitialize methods within typeDef call their inherited siblings.
-        ///// </summary>
-        ///// <param name="copyTypeDef"></param>
-        //internal void CreateNetworkInitializeBaseCalls(TypeDefinition typeDef)
-        //{
-        //    //return;
-        //    /* Go up the hierarchy and call every inherited networkinitialize.
-        //     * Every class gets one so they should never be missing. */
-        //    TypeDefinition copyTypeDef = typeDef;
-
-        //    do
-        //    {
-        //        if (copyTypeDef.CanProcessBaseType())
-        //        {
-        //            TypeDefinition baseTypeDef = copyTypeDef.BaseType.Resolve();
-        //            MethodDefinition baseInitializeMethodDef = baseTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
-        //            MethodDefinition copyInitializeMethodDef = copyTypeDef.GetMethod(NETWORKINITIALIZE_INTERNAL_NAME);
-        //            MethodReference baseMethodRef = CodegenSession.Module.ImportReference(baseInitializeMethodDef);
-        //            ILProcessor processor = copyInitializeMethodDef.Body.GetILProcessor();
-
-        //            //Create instructions for base call.
-        //            List<Instruction> instructions = new List<Instruction>();
-        //            instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
-        //            instructions.Add(processor.Create(OpCodes.Call, baseMethodRef));
-        //            processor.InsertFirst(instructions);
-
-        //            /* If the base class has already been processed then exit because
-        //            * its base calls have already been added. This can be
-        //            * when a class is inherited by a variety of others. Therefor
-        //            * there is no reason to keep going. */
-        //            if (HasClassBeenProcessed(baseTypeDef))
-        //                return;
-        //        }
-        //        copyTypeDef = TypeDefinitionExtensions.GetNextBaseClassToProcess(copyTypeDef);
-        //    } while (copyTypeDef != null);
-
-        //}
 
 
         /// <summary>

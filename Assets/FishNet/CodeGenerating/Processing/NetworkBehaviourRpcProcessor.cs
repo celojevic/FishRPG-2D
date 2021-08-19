@@ -63,9 +63,7 @@ namespace FishNet.CodeGenerating.Processing
             if (createdMethodDefs.Count > 0)
             {
                 bool constructorCreated;
-                MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out constructorCreated, true);
-                if (constructorCreated)
-                    typeDef.Methods.Add(constructorMethodDef);
+                MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out constructorCreated, false);
 
                 /* Add each method to typeDef. This also
                  * initializes them with properties related to
@@ -77,8 +75,6 @@ namespace FishNet.CodeGenerating.Processing
                 //NetworkObject.Create_____Delegate.
                 foreach ((RpcType rpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash) in delegateMethodDefs)
                     CodegenSession.ObjectHelper.CreateRpcDelegate(constructorProcesser, originalMethodDef, readerMethodDef, rpcType, methodHash);
-                //Add return type to end of constructor.
-                constructorProcesser.Emit(OpCodes.Ret);
 
                 modified = true;
             }

@@ -15,7 +15,7 @@ using FishNet.Transporting;
 
 namespace FishNet.Managing.Scened
 {
-    public class SceneManager : NetworkBehaviour
+    public class SceneManager : MonoBehaviour
     {
         #region Types.
         /// <summary>
@@ -132,7 +132,7 @@ namespace FishNet.Managing.Scened
 
         private void Start()
         {
-            _serverManager.OnClientAuthenticatedInternal += _serverManager_OnClientAuthenticatedInternal;
+            _serverManager.OnAuthenticationResultInternal += _serverManager_OnAuthenticationResultInternal;
             _networkManager.TransportManager.Transport.OnRemoteConnectionState += Transport_OnRemoteConnectionState;
             //No need to unregister since managers are on the same object.
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnLoadScenes);
@@ -195,7 +195,6 @@ namespace FishNet.Managing.Scened
         #endregion
 
         #region Initial synchronizing.
-
         /// <summary>
         /// Invokes OnClientLoadedStartScenes if connection just loaded start scenes.
         /// </summary>
@@ -205,20 +204,15 @@ namespace FishNet.Managing.Scened
             if (connection.SetLoadedStartScenes())
                 OnClientLoadedStartScenes?.Invoke(connection);
         }
+
         /// <summary>
-        /// Received after a client authenticates.
+        /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed. This invokes before OnClientAuthenticated so FishNet may run operations on authenticated clients before user code does.
         /// </summary>
         /// <param name="obj"></param>
-        private void _serverManager_OnClientAuthenticatedInternal(NetworkConnection conn)
+        private void _serverManager_OnAuthenticationResultInternal(NetworkConnection conn, bool passed)
         {
-            ClientAuthenticatedInternal(conn);
-        }
-        /// <summary>
-        /// Called when a client connects to the server, after authentication.
-        /// </summary>
-        /// <param name="conn"></param> //finish
-        private void ClientAuthenticatedInternal(NetworkConnection conn)
-        {
+            if (!passed)
+                return;
             if (!conn.IsValid)
                 return;
 
@@ -498,6 +492,7 @@ namespace FishNet.Managing.Scened
             if (!CanExecute(true, true))
                 return;
 
+
             if (loadOptions == null)
                 loadOptions = new LoadOptions();
             if (loadParams == null)
@@ -510,6 +505,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private void LoadScenesInternal(SceneScopeTypes scope, NetworkConnection[] conns, SingleSceneData singleScene, AdditiveScenesData additiveScenes, LoadOptions loadOptions, LoadParams loadParams, NetworkedScenesData networkedScenes, bool asServer)
         {
+            if (conns == null)
+                conns = new NetworkConnection[0];
             //Add to scene queue data.        
             _queuedSceneOperations.Add(new LoadSceneQueueData(scope, conns, singleScene, additiveScenes, loadOptions, loadParams, networkedScenes, asServer));
             /* If only one entry then scene operations are not currently in progress.
@@ -669,7 +666,7 @@ namespace FishNet.Managing.Scened
                     /* If only certain connections then remove connections
                     * from all scenes. They will be placed into new scenes
                     * once they confirm the scenes have loaded on their end. */
-                    if (singleSceneSpecified)
+                    if (singleSceneSpecified && sqd.Connections != null)
                     {
                         for (int i = 0; i < sqd.Connections.Length; i++)
                             RemoveFromAllSceneConnections(sqd.Connections);
@@ -987,10 +984,13 @@ namespace FishNet.Managing.Scened
                 //If connections scope then only send to connections.
                 else if (sqd.ScopeType == SceneScopeTypes.Connections)
                 {
-                    for (int i = 0; i < sqd.Connections.Length; i++)
+                    if (sqd.Connections != null)
                     {
-                        if (sqd.Connections[i] != null)
-                            sqd.Connections[i].Broadcast(msg, true);
+                        for (int i = 0; i < sqd.Connections.Length; i++)
+                        {
+                            if (sqd.Connections[i] != null)
+                                sqd.Connections[i].Broadcast(msg, true);
+                        }
                     }
                 }
             }
@@ -2045,6 +2045,4 @@ namespace FishNet.Managing.Scened
         }
 
     }
-
-
 }

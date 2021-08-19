@@ -108,7 +108,7 @@ namespace FishNet
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public static bool IsHost =>  (NetworkManager == null) ? false : (ServerManager.Active && ClientManager.Active);
+        public static bool IsHost =>  (NetworkManager == null) ? false : (ServerManager.Started && ClientManager.Started);
         #endregion
 
         #region Private.

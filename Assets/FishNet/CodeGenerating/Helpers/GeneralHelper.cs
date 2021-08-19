@@ -187,7 +187,7 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         /// <param name="moduleDef"></param>
         /// <returns></returns>
-        internal TypeDefinition GetOrCreateClass( out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef)
+        internal TypeDefinition GetOrCreateClass(out bool created, TypeAttributes typeAttr, string className, TypeReference baseTypeRef)
         {
             TypeDefinition type = CodegenSession.Module.GetClass(className);
             if (type != null)
@@ -284,29 +284,17 @@ namespace FishNet.CodeGenerating.Helping
         internal MethodDefinition GetOrCreateConstructor(TypeDefinition typeDef, out bool created, bool makeStatic)
         {
             // find constructor
-            MethodDefinition cctorMethodDef = typeDef.GetMethod(".cctor");
-            if (cctorMethodDef == null)
-                cctorMethodDef = typeDef.GetMethod(".ctor");
+            MethodDefinition constructorMethodDef = typeDef.GetMethod(".cctor");
+            if (constructorMethodDef == null)
+                constructorMethodDef = typeDef.GetMethod(".ctor");
 
-            //Static constructor already exist.
-            if (cctorMethodDef != null)
+            //Constructor already exist.
+            if (constructorMethodDef != null)
             {
+                if (!makeStatic)
+                    constructorMethodDef.Attributes &= ~MethodAttributes.Static;
+
                 created = false;
-                /* If there is OpCodes.Ret at the end then remove it.
-                 * This OpCode will be added on again later. */
-                if (cctorMethodDef.Body.Instructions.Count != 0)
-                {
-                    Instruction lastInst = cctorMethodDef.Body.Instructions[cctorMethodDef.Body.Instructions.Count - 1];
-                    if (lastInst.OpCode == OpCodes.Ret)
-                    {
-                        cctorMethodDef.Body.Instructions.RemoveAt(cctorMethodDef.Body.Instructions.Count - 1);
-                    }
-                    else
-                    {
-                        CodegenSession.Diagnostics.AddError($"{typeDef.Name} has invalid class constructor");
-                        return null;
-                    }
-                }
             }
             //Static constructor does not exist yet.
             else
@@ -319,12 +307,18 @@ namespace FishNet.CodeGenerating.Helping
                     methodAttr |= Mono.Cecil.MethodAttributes.Static;
 
                 //Create a constructor.
-                cctorMethodDef = new MethodDefinition(".cctor", methodAttr,
+                constructorMethodDef = new MethodDefinition(".ctor", methodAttr,
                         typeDef.Module.TypeSystem.Void
                         );
+
+                typeDef.Methods.Add(constructorMethodDef);
+
+                //Add ret.
+                ILProcessor processor = constructorMethodDef.Body.GetILProcessor();
+                processor.Emit(OpCodes.Ret);
             }
 
-            return cctorMethodDef;
+            return constructorMethodDef;
         }
 
         /// <summary>

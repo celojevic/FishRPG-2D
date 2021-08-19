@@ -74,7 +74,6 @@ namespace FishNet.Managing.Transporting
 
             InitializeOutgoingSplits();
             InitializeToServerBundles();
-            AddNetworkLoops();
         }
 
         /// <summary>
@@ -96,18 +95,6 @@ namespace FishNet.Managing.Transporting
                 int mtu = Transport.GetMTU(i);
                 _toServerBundles.Add(new PacketBundle(mtu));
             }
-        }
-        /// <summary>
-        /// Adds network loops to gameObject.
-        /// </summary>
-        private void AddNetworkLoops()
-        {
-            //Writer.
-            if (!gameObject.TryGetComponent<NetworkWriterLoop>(out _))
-                gameObject.AddComponent<NetworkWriterLoop>();
-            //Reader.
-            if (!gameObject.TryGetComponent<NetworkReaderLoop>(out _))
-                gameObject.AddComponent<NetworkReaderLoop>();
         }
 
         /// <summary>
@@ -168,9 +155,9 @@ namespace FishNet.Managing.Transporting
         internal void SendToClients(byte channelId, ArraySegment<byte> segment, NetworkObject networkObject, bool splitLargeIntoReliable = true)
         {
             //if (networkObject.NetworkObserver == null)
-                //SendToClients(channelId, segment, splitLargeIntoReliable);
+            //SendToClients(channelId, segment, splitLargeIntoReliable);
             //else
-                SendToClients(channelId, segment, networkObject.Observers, splitLargeIntoReliable);
+            SendToClients(channelId, segment, networkObject.Observers, splitLargeIntoReliable);
         }
 
 
@@ -347,6 +334,11 @@ namespace FishNet.Managing.Transporting
                         }
                     }
 
+                    if (conn.Disconnecting)
+                    {
+                        Transport.StopConnection(conn.ClientId, false);
+                        conn.UnsetDisconnecting();
+                    }
                     conn.ResetServerDirty();
                 }
 

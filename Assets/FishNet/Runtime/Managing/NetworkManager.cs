@@ -11,6 +11,7 @@ using FishNet.Managing.Object;
 //using FishNet.Managing.Scened;
 using UnityEngine;
 using FishNet.Managing.Scened;
+using FishNet.Authenticating;
 
 namespace FishNet.Managing
 {
@@ -23,15 +24,15 @@ namespace FishNet.Managing
         /// <summary>
         /// True if server is active.
         /// </summary>
-        public bool IsServer => ServerManager.Active;
+        public bool IsServer => ServerManager.Started;
         /// <summary>
         /// True if the client is active and authenticated.
         /// </summary>
-        public bool IsClient => ClientManager.Active;
+        public bool IsClient => ClientManager.Started;
         /// <summary>
         /// True if client and server are active.
         /// </summary>
-        public bool IsHost => (ServerManager.Active && ClientManager.Active);
+        public bool IsHost => (ServerManager.Started && ClientManager.Started);
         /// <summary>
         /// NetworkServer for this NetworkManager.
         /// </summary>
@@ -52,6 +53,10 @@ namespace FishNet.Managing
         /// SceneManager for this NetworkManager.
         /// </summary>
         public SceneManager SceneManager { get; private set; } = null;
+        /// <summary>
+        /// Authenticator for this NetworkManager. May be null if no Authenticator is used.
+        /// </summary>
+        public Authenticator Authenticator { get; private set; } = null;
         /// <summary>
         /// An empty connection. Passed around when a connection cannot be found to prevent object creation per not found case.
         /// </summary>
@@ -100,36 +105,52 @@ namespace FishNet.Managing
             EmptyConnection = new NetworkConnection();
             FindTransportManager();
             AddTimeManager();
+            TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
             AddNetworkServerAndClient();
-            AddSceneManager();
-            ServerManager.Initialize(this);
-            ClientManager.Initialize(this);
+            AddSceneManager();;
+            ServerManager.FirstInitialize(this);
+            ClientManager.FirstInitialize(this);
         }
 
-        protected virtual void LateUpdate()
+        /// <summary>
+        /// Called when MonoBehaviours call LateUpdate.
+        /// </summary>
+        private void TimeManager_OnLateUpdate()
         {
             /* Some reason runinbackground becomes unset
-             * or the setting goes ignored some times when it's set
-             * in awake. Rather than try to fix or care why Unity
-             * does this just set it in LateUpdate(or Update). */
+            * or the setting goes ignored some times when it's set
+            * in awake. Rather than try to fix or care why Unity
+            * does this just set it in LateUpdate(or Update). */
             SetRunInBackground();
+
+            /* Iterate outgoing fast as possible. It's the users
+             * responsibility to use the tick events if they
+             * wish to only send data on ticks. Data will however
+             * only be read on ticks to maintain accurate
+             * processing timings. */
             ServerManager.Objects.CheckDirtySyncTypes();
+            /* Call these methods from here rather than
+             * the transport manager so sync types
+             * can be processed first. */
+            TransportManager.IterateOutgoing(true);
+            TransportManager.IterateOutgoing(false);
         }
 
+        
         /// <summary>
         /// Returns if this NetworkManager can exist.
         /// </summary>
         /// <returns></returns>
         private bool WillBeDestroyed()
         {
+            return false;
             if (_allowMultiple)
-                return true;
+                return false;
 
             //If here multiple are not allowed.
-            NetworkManager nm = InstanceFinder.NetworkManager;
             //If found NetworkManager isn't this copy then return false.
-            bool destroyThis = (nm != this);
-
+            bool destroyThis = (InstanceFinder.NetworkManager != this);
+            return false;
             if (destroyThis)
             {
                 Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");

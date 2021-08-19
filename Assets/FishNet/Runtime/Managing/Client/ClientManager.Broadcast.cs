@@ -1,5 +1,4 @@
-﻿using FishNet.Connection;
-using FishNet.Serializing;
+﻿using FishNet.Serializing;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,7 +45,7 @@ namespace FishNet.Managing.Client
             }
             ServerBroadcastDelegate del = CreateBroadcastDelegate(handler);
             handlers.Add(del);
-            
+
             /* Add hashcode of target for handler.
              * This is so we can unregister the target later. */
             int handlerHashCode = handler.GetHashCode();
@@ -145,7 +144,8 @@ namespace FishNet.Managing.Client
         /// <param name="channel"></param>
         public void Broadcast<T>(T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            if (!Active)
+            //Check local connection state.
+            if (!Started)
             {
                 Debug.LogError($"Cannot send broadcast to server because client is not active.");
                 return;

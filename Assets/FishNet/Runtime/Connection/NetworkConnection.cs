@@ -1,8 +1,8 @@
 ﻿using FishNet.Managing;
 using FishNet.Object;
-using FishNet.Serializing.Helping;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Connection
@@ -29,19 +29,30 @@ namespace FishNet.Connection
         /// </summary>
         public int ClientId = -1;
         /// <summary>
-        /// Objects owned by this connection.
+        /// Returns if this connection is for the local client.
+        /// </summary>
+        public bool IsLocalClient => (NetworkManager != null) ? (NetworkManager.ClientManager.Connection == this) : false;
+        /// <summary>
+        /// Objects owned by this connection. Only valid on owner and server.
         /// </summary>
         public HashSet<NetworkObject> Objects = new HashSet<NetworkObject>();
         /// <summary>
         /// Scenes this connection is in.
         /// </summary>
         public HashSet<Scene> Scenes { get; private set; } = new HashSet<Scene>();
+        #endregion
+
+        #region Internal.
         /// <summary>
-        /// True if this connection has loaded default networked scenes.
+        /// True if being disconnected.
         /// </summary>
+        internal bool Disconnecting { get; private set; } = false;
         #endregion
 
         #region Private.
+        /// <summary>
+        /// True if connection has loaded start scenes.
+        /// </summary>
         private bool _loadedStartScenes = false;
         #endregion
 
@@ -58,7 +69,7 @@ namespace FishNet.Connection
                 return true;
             if (this.GetType() != nc.GetType())
                 return false;
-            
+
             return (this.ClientId == nc.ClientId);
         }
         public override int GetHashCode()
@@ -108,7 +119,33 @@ namespace FishNet.Connection
             Authenticated = false;
             NetworkManager = null;
             _loadedStartScenes = false;
+            UnsetDisconnecting();
             Scenes.Clear();
+        }
+
+
+        /// <summary>
+        /// Disconnects this connection.
+        /// </summary>
+        /// <param name="immediately">True to disconnect immediately. False to send any pending data first.</param>
+        public void Disconnect(bool immediately)
+        {
+            if (immediately)
+            {
+                NetworkManager.TransportManager.Transport.StopConnection(ClientId, true);
+            }
+            else
+            {
+                Disconnecting = true;
+                ServerDirty();
+            }
+        }
+        /// <summary>
+        /// Unsets Disconnecting property.
+        /// </summary>
+        internal void UnsetDisconnecting()
+        {
+            Disconnecting = false;
         }
 
         /// <summary>

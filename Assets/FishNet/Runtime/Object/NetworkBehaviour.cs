@@ -40,6 +40,43 @@ namespace FishNet.Object
             PreInitializeCallbacks(networkObject);
         }
 
+
+        #region Editor.
+#if UNITY_EDITOR
+        protected virtual void Reset()
+        {
+            TryAddNetworkObject();
+        }
+
+        protected virtual void OnValidate()
+        {
+            TryAddNetworkObject();
+        }
+        /// <summary>
+        /// Tries to add the NetworkObject component.
+        /// </summary>
+        private void TryAddNetworkObject()
+        {
+            if (NetworkObject != null)
+                return;
+            /* Manually iterate up the chain because GetComponentInParent doesn't
+             * work when modifying prefabs in the inspector. Unity, you're starting
+             * to suck a lot right now. */
+            NetworkObject result = null;
+            Transform climb = transform;
+
+            while (climb != null)
+            {
+                if (climb.TryGetComponent<NetworkObject>(out result))
+                    break;
+                else
+                    climb = climb.parent;
+            }
+
+            NetworkObject = (result != null) ? result : transform.root.gameObject.AddComponent<NetworkObject>();
+        }
+#endif
+        #endregion
     }
 
 

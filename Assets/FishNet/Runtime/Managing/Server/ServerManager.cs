@@ -5,7 +5,7 @@ using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
+using FishNet.Authenticating;
 
 namespace FishNet.Managing.Server
 {
@@ -14,28 +14,27 @@ namespace FishNet.Managing.Server
     {
         #region Public.
         /// <summary>
-        /// Called after a client completes authentication. This invokes before OnClientAuthenticated so FishNet may run operations on authenticated clients before user code does.
+        /// Called after local server connection state changes. This is performed after the state change has been handled internally.
         /// </summary>
-        internal event Action<NetworkConnection> OnClientAuthenticatedInternal;
+        public event Action<ServerConnectionStateArgs> OnServerConnectionState;
         /// <summary>
-        /// Called after a client completes authentication.
+        /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed. This invokes before OnClientAuthenticated so FishNet may run operations on authenticated clients before user code does.
         /// </summary>
-        public event Action<NetworkConnection> OnClientAuthenticated;
+        internal event Action<NetworkConnection, bool> OnAuthenticationResultInternal;
         /// <summary>
-        /// True if the server is running.
+        /// Called when authenitcator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
         /// </summary>
-        public bool Active { get; private set; } = false;
+        public event Action<NetworkConnection, bool> OnAuthenticationResult;
         /// <summary>
-        /// Connected clients which have authenticated.
+        /// True if the server connection has started.
         /// </summary>
-        [HideInInspector]
-        public HashSet<int> AuthenticatedClients = new HashSet<int>();
+        public bool Started { get; private set; } = false;
         /// <summary>
         /// ObjectHandler for server objects.
         /// </summary>
         public ServerObjects Objects { get; private set; } = null;
         /// <summary>
-        /// Connected clients.
+        /// Authenticated and non-authenticated connected clients.
         /// </summary>
         [HideInInspector]
         public Dictionary<int, NetworkConnection> Clients = new Dictionary<int, NetworkConnection>();
@@ -50,6 +49,16 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// 
         /// </summary>
+        [Tooltip("Authenticator for this ServerManager. May be null if not using authentication.")]
+        [SerializeField]
+        private Authenticator _authenticator;
+        /// <summary>
+        /// Authenticator for this ServerManager. May be null if not using authentication.
+        /// </summary>
+        public Authenticator Authenticator { get => _authenticator; set => _authenticator = value; }
+        /// <summary>
+        /// 
+        /// </summary>
         [Tooltip("True to share current owner of objects with all clients. False to hide owner of objects from everyone but owner.")]
         [SerializeField]
         private bool _shareOwners = true;
@@ -57,22 +66,26 @@ namespace FishNet.Managing.Server
         /// True to share current owner of objects with all clients. False to hide owner of objects from everyone but owner.
         /// </summary>
         internal bool ShareOwners => _shareOwners;
-
         #endregion
 
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void Initialize(NetworkManager manager)
+        internal void FirstInitialize(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ServerObjects(manager);
             //Unsubscrive first incase already subscribed.
             SubscribeToTransport(false);
             SubscribeToTransport(true);
-        }
 
+            if (_authenticator != null)
+            {
+                _authenticator.FirstInitialize(manager);
+                _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
+            }
+        }
 
         /// <summary>
         /// Changes subscription status to transport.
@@ -98,21 +111,37 @@ namespace FishNet.Managing.Server
         }
 
         /// <summary>
+        /// Called when authenticator has concluded a result for a connection. Boolean is true if authentication passed, false if failed.
+        /// Server listens for this event automatically.
+        /// </summary>
+        private void _authenticator_OnAuthenticationResult(NetworkConnection conn, bool authenticated)
+        {
+            if (!authenticated)
+                conn.Disconnect(false);
+            else
+                ClientAuthenticated(conn);
+        }
+
+
+
+        /// <summary>
         /// Called when a connection state changes local server.
         /// </summary>
         /// <param name="args"></param>
         private void Transport_OnServerConnectionState(ServerConnectionStateArgs args)
         {
-            Active = (args.ConnectionState == LocalConnectionStates.Started);
+            Started = (args.ConnectionState == LocalConnectionStates.Started);
             Objects.OnServerConnectionState(args);
             //If not connected then clear clients.
             if (args.ConnectionState != LocalConnectionStates.Started)
                 Clients.Clear();
-            
+
             if (args.ConnectionState == LocalConnectionStates.Started)
                 Debug.Log("Server started."); //tmp.
             else if (args.ConnectionState == LocalConnectionStates.Stopped)
                 Debug.Log("Server stopped."); //tmp.
+
+            OnServerConnectionState?.Invoke(args);
         }
 
         /// <summary>
@@ -127,17 +156,13 @@ namespace FishNet.Managing.Server
                 if (args.ConnectionState == RemoteConnectionStates.Started)
                 {
                     Debug.Log($"Remote connection started for Id {args.ConnectionId}."); //tmp.
-
                     NetworkConnection conn = new NetworkConnection(NetworkManager, args.ConnectionId);
-                    /* Immediately send connectionId to client. Some transports
-                     * don't give clients their remoteId, therefor it has to be sent
-                     * by the ServerManager. This packet is very simple and can be built
-                     * on the spot. */
-                    SendConnectionId(conn);
-                    AuthenticatedClients.Add(args.ConnectionId);
-                    //Clients[args.ConnectionId] = conn;
                     Clients.Add(args.ConnectionId, conn);
-                    ClientAuthenticated(conn);
+
+                    if (Authenticator != null)
+                        Authenticator.OnRemoteConnection(conn);
+                    else
+                        ClientAuthenticated(conn);
                 }
                 //If stopping.
                 else if (args.ConnectionState == RemoteConnectionStates.Stopped)
@@ -146,7 +171,6 @@ namespace FishNet.Managing.Server
                      * them up from server. */
                     if (Clients.TryGetValue(args.ConnectionId, out NetworkConnection conn))
                     {
-                        AuthenticatedClients.Remove(args.ConnectionId);
                         Clients.Remove(args.ConnectionId);
                         Objects.ClientDisconnected(conn);
                         conn.Reset();
@@ -175,20 +199,17 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void Transport_OnServerReceivedData(ServerReceivedDataArgs args)
         {
-            DataReceived(args);
+            ParseReceived(args);
         }
 
         /// <summary>
         /// Called when the server receives data.
         /// </summary>
         /// <param name="args"></param>
-        private void DataReceived(ServerReceivedDataArgs args)
+        private void ParseReceived(ServerReceivedDataArgs args)
         {
             //Not from a valid connection.
             if (args.ConnectionId < 0)
-                return;
-            //User isn't authenticated. //muchlater check if authentication packet before exiting.
-            if (!AuthenticatedClients.Contains(args.ConnectionId))
                 return;
             ArraySegment<byte> segment = args.Data;
             if (segment.Count == 0)
@@ -197,12 +218,31 @@ namespace FishNet.Managing.Server
             PacketId packetId = PacketId.Unset;
             try
             {
-                //PooledReader reader = ReaderPool.GetReader(segment, NetworkManager);
                 using (PooledReader reader = ReaderPool.GetReader(segment, NetworkManager))
                 {
                     while (reader.Remaining > 0)
                     {
                         packetId = (PacketId)reader.ReadByte();
+
+                        NetworkConnection conn;
+                        Clients.TryGetValue(args.ConnectionId, out conn);
+                        /* Connection isn't available. This should never happen.
+                         * Force an immediate disconnect. */
+                        if (conn == null)
+                        {
+                            NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
+                            return;
+                        }
+                        /* If connection isn't authenticated and isn't a broadcast
+                         * then disconnect client. If a broadcast then process
+                         * normally; client may still become disconnected if the broadcast
+                         * does not allow to be called while not authenticated. */
+                        if (!conn.Authenticated && packetId != PacketId.Broadcast)
+                        {
+                            conn.Disconnect(true);
+                            return;
+                        }
+
                         if (packetId == PacketId.ServerRpc)
                         {
                             Objects.ParseServerRpc(reader, args.ConnectionId);
@@ -233,10 +273,15 @@ namespace FishNet.Managing.Server
         /// <param name="connectionId"></param>
         private void ClientAuthenticated(NetworkConnection connection)
         {
+            /* Immediately send connectionId to client. Some transports
+            * don't give clients their remoteId, therefor it has to be sent
+            * by the ServerManager. This packet is very simple and can be built
+            * on the spot. */
             connection.ConnectionAuthenticated();
-            Objects.ClientAuthenticated(connection);
-            OnClientAuthenticatedInternal?.Invoke(connection);
-            OnClientAuthenticated?.Invoke(connection);
+            SendConnectionId(connection);
+            
+            OnAuthenticationResultInternal?.Invoke(connection, true);
+            OnAuthenticationResult?.Invoke(connection, true);
         }
 
     }

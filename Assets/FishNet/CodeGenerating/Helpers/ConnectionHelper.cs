@@ -9,8 +9,6 @@ namespace FishNet.CodeGenerating.Helping
         private TypeReference NetworkConnection_TypeRef;
         #endregion
 
-
-
         /// <summary>
         /// Imports references needed by this helper.
         /// </summary>

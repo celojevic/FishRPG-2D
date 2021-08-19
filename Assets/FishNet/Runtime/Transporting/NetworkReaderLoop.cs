@@ -1,4 +1,4 @@
-﻿using FishNet.Managing.Transporting;
+﻿using FishNet.Managing.Timing;
 using UnityEngine;
 
 namespace FishNet.Transporting
@@ -10,48 +10,24 @@ namespace FishNet.Transporting
     {
         #region Private.
         /// <summary>
-        /// TransportManager this loop is for.
+        /// TimeManager this loop is for.
         /// </summary>
-        private TransportManager _transportManager = null;
-        /// <summary>
-        /// Last frame which iteration occurred.
-        /// </summary>
-        private int _lastIterateFrame = -1;
+        private TimeManager _timeManager;
         #endregion
 
         private void Awake()
         {
-            _transportManager = GetComponent<TransportManager>();
+            _timeManager = GetComponent<TimeManager>();
         }
 
         private void FixedUpdate()
         {
-            Iterate();
+            _timeManager.TickFixedUpdate();
         }
         private void Update()
         {
-            //Don't iterate if in fixed step as fixedUpdate already iterated first.
-            if (!Time.inFixedTimeStep)
-                Iterate();
+            _timeManager.TickUpdate();
         }
-
-        /// <summary>
-        /// Performs read on transport.
-        /// </summary>
-        private void Iterate()
-        {
-            //No reason to iterate more than once. Can occur from fixedupdate iterate call.
-            if (Time.frameCount == _lastIterateFrame)
-                return;
-            _lastIterateFrame = Time.frameCount;
-
-            if (_transportManager != null)
-            {
-                _transportManager.IterateIncoming(true);
-                _transportManager.IterateIncoming(false);
-            }
-        }
-
     }
 
 

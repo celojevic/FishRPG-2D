@@ -410,7 +410,7 @@ namespace FishNet.Component.Animating
 
         private void Awake()
         {
-            Initialize();
+            FirstInitialize();
         }
 
         public override void OnSpawnServer(NetworkConnection connection)
@@ -452,9 +452,9 @@ namespace FishNet.Component.Animating
 
 
         /// <summary>
-        /// Initializes this script for use. Should only be completed once.
+        /// Initializes this script for use.
         /// </summary>
-        private void Initialize()
+        private void FirstInitialize()
         {
             if (_animator == null)
                 _animator = GetComponent<Animator>();
@@ -532,7 +532,7 @@ namespace FishNet.Component.Animating
                 return;
 
             _animator = animator;
-            Initialize();
+            FirstInitialize();
             _lastAnimator = animator;
         }
 
@@ -547,7 +547,7 @@ namespace FishNet.Component.Animating
                 return;
 
             _animator.runtimeAnimatorController = controller;
-            Initialize();
+            FirstInitialize();
             _lastController = controller;
         }
 

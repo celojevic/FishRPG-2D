@@ -109,15 +109,6 @@ namespace FishNet.Managing.Server.Object
         }
 
         /// <summary>
-        /// Called when a client connects and authenticates with the server.
-        /// </summary>
-        /// <param name="connection"></param>
-        internal void ClientAuthenticated(NetworkConnection connection)
-        {
-            //RebuildObservers(connection);
-        }
-
-        /// <summary>
         /// Called when a client disconnects.
         /// </summary>
         /// <param name="connection"></param>
@@ -192,7 +183,7 @@ namespace FishNet.Managing.Server.Object
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
-            if (!NetworkManager.ServerManager.Active)
+            if (!NetworkManager.ServerManager.Started)
                 return;
             SetupSceneObjects(s);
         }
@@ -212,7 +203,7 @@ namespace FishNet.Managing.Server.Object
         /// <param name="s"></param>
         private void SetupSceneObjects(Scene s)
         {
-            if (!NetworkManager.ServerManager.Active)
+            if (!NetworkManager.ServerManager.Started)
             {
                 Debug.LogWarning($"Cannot setup scene objects while server is not active.");
                 return;
@@ -269,7 +260,7 @@ namespace FishNet.Managing.Server.Object
         /// <param name="networkObject"></param>
         internal void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection = null)
         {
-            if (!NetworkManager.ServerManager.Active)
+            if (!NetworkManager.ServerManager.Started)
             {
                 Debug.Log("Cannot spawn object because the server is not active.");
                 return;

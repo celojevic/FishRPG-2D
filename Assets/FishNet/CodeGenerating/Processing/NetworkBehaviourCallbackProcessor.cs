@@ -43,7 +43,7 @@ namespace FishNet.CodeGenerating.Processing
             bool modified = false;
 
             ModuleDefinition moduleDef = typeDef.Module;
-            MethodDefinition methodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_INTERNAL_NAME);
+            MethodDefinition methodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
 
             ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> instructions = new List<Instruction>();

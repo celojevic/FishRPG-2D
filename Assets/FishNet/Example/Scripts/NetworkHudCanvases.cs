@@ -32,13 +32,13 @@ public class NetworkHudCanvases : MonoBehaviour
         Text t;
 
         t = ServerButton.GetComponentInChildren<Text>();
-        if (_networkManager.ServerManager.Active)
+        if (_networkManager.ServerManager.Started)
             t.text = "Stop Server";
         else
             t.text = "Start Server";
 
         t = ClientButton.GetComponentInChildren<Text>();
-        if (_networkManager.ClientManager.Active)
+        if (_networkManager.ClientManager.Started)
             t.text = "Stop Client";
         else
             t.text = "Start Client";
@@ -46,7 +46,7 @@ public class NetworkHudCanvases : MonoBehaviour
 
     public void OnClick_Server()
     {
-        if (_networkManager.ServerManager.Active)
+        if (_networkManager.ServerManager.Started)
             _networkManager.TransportManager.Transport.StopConnection(true);
         else
             _networkManager.TransportManager.Transport.StartConnection(true);
@@ -55,7 +55,7 @@ public class NetworkHudCanvases : MonoBehaviour
 
     public void OnClick_Client()
     {
-        if (_networkManager.ClientManager.Active)
+        if (_networkManager.ClientManager.Started)
             _networkManager.TransportManager.Transport.StopConnection(false);
         else
             _networkManager.TransportManager.Transport.StartConnection(false);

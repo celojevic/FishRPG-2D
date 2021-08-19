@@ -37,18 +37,19 @@ namespace FishNet.Connection
             }
         }
 
+
         /// <summary>
         /// Sends a broadcast to this connection.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="message"></param>
         /// <param name="channel"></param>
-        public void Broadcast<T>(T message, bool requireAuthenticated, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        public void Broadcast<T>(T message, bool requireAuthenticated = true,  Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
             if (!IsValid)
                 Debug.LogError($"Connection is not valid, cannot send broadcast.");
             else
-                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated, channel);
+                InstanceFinder.ServerManager.Broadcast<T>(this, message, requireAuthenticated,channel);
         }
 
         /// <summary>
@@ -59,6 +60,9 @@ namespace FishNet.Connection
         /// <param name="connectionId"></param>
         internal void SendToClient(byte channel, ArraySegment<byte> segment)
         {
+            //Cannot send data when disconnecting.
+            if (Disconnecting)
+                return;
             if (!IsValid)
                 throw new ArgumentException($"NetworkConnection is not valid.");
             if (channel >= _toClientBundles.Count)

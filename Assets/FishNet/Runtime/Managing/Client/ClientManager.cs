@@ -14,9 +14,13 @@ namespace FishNet.Managing.Client
     {
         #region Public.
         /// <summary>
-        /// True if the client is running and authenticated.
+        /// Called after local clients connections state changes. This is performed after the state change has been handled internally.
         /// </summary>
-        public bool Active { get; private set; } = false;
+        public event Action<ClientConnectionStateArgs> OnClientConnectionState;
+        /// <summary>
+        /// True if the client connection is connected to the server.
+        /// </summary>
+        public bool Started { get; private set; } = false;
         /// <summary>
         /// NetworkConnection client is using to send data to the server.
         /// </summary>
@@ -39,7 +43,7 @@ namespace FishNet.Managing.Client
         /// Initializes this script for use.
         /// </summary>
         /// <param name="manager"></param>
-        internal void Initialize(NetworkManager manager)
+        internal void FirstInitialize(NetworkManager manager)
         {
             NetworkManager = manager;
             Objects = new ClientObjects(manager);
@@ -79,13 +83,15 @@ namespace FishNet.Managing.Client
         /// <param name="args"></param>
         private void Transport_OnClientConnectionState(ClientConnectionStateArgs args)
         {
-            Active = (args.ConnectionState == LocalConnectionStates.Started);
+            Started = (args.ConnectionState == LocalConnectionStates.Started);
             Objects.OnClientConnectionState(args);
             //Clear connection after so objects can update using current Connection value.
-            if (!Active)
+            if (!Started)
                 Connection = null;
             else
                 Debug.Log("Client connected to server."); //tmp.
+
+            OnClientConnectionState?.Invoke(args);
         }
 
         /// <summary>
@@ -108,7 +114,7 @@ namespace FishNet.Managing.Client
              * at the end of the incoming cycle. This isn't as clean as I'd
              * like but it does ensure there will be no missing network object
              * references on spawned objects. */
-            if (Active)
+            if (Started)
                 Objects.IterateObjectCache();
         }
 

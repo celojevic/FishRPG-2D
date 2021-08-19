@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FishNet.Transporting;
+using System;
 using UnityEngine;
 
 namespace FishNet.Managing.Timing
@@ -32,6 +33,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnFixedUpdate;
         /// <summary>
+        /// Current network tick converted to time.
+        /// </summary>
+        public double Time => TicksToTime(Tick);
+        /// <summary>
         /// Current network tick.
         /// </summary>
         public uint Tick { get; private set; }
@@ -49,7 +54,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         [Tooltip("How many times per second the server will simulate; simulation rate is used for state control.")]
         [SerializeField]
-        private ushort _simulationRate = 60;
+        private ushort _simulationRate = 9999;
         /// <summary>
         /// How many times per second the server will simulate; simulation rate is used for state control.
         /// </summary>
@@ -69,26 +74,12 @@ namespace FishNet.Managing.Timing
         /// NetworkManager used with this.
         /// </summary>
         private NetworkManager _networkManager;
-        /// <summary>
-        /// True if can tick.
-        /// </summary>
-        private bool CanTick => (_networkManager != null) && (_networkManager.IsServer || _networkManager.IsClient);
         #endregion
 
-        private void FixedUpdate()
+        private void Awake()
         {
-            OnFixedUpdate?.Invoke();
-        }
-
-        private void Update()
-        {
-            IncreaseTick();
-            OnUpdate?.Invoke();
-        }
-
-        private void LateUpdate()
-        {
-            OnLateUpdate?.Invoke();
+            AddNetworkLoops();
+            _stopwatch.Restart();
         }
 
         /// <summary>
@@ -113,26 +104,18 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void IncreaseTick()
         {
-            //Server nor client is running.
-            if (!CanTick)
-            {
-                _stopwatch.Stop();
-                return;
-            }
-            //Server or client is running.
-            else
-            {
-                //If stopwatch isn't running then restart it.
-                if (!_stopwatch.IsRunning)
-                    _stopwatch.Restart();
-            }
-
             double timePerSimulation = 1d / SimulationRate;
             _elapsedTime += (_stopwatch.ElapsedMilliseconds / 1000d);
 
             while (_elapsedTime >= timePerSimulation)
             {
                 OnPreTick?.Invoke(Tick);
+
+                /* Iterate incoming before invoking OnTick.
+                 * OnTick should be used by users to create
+                 * logic based on read data. */
+                _networkManager.TransportManager.IterateIncoming(true);
+                _networkManager.TransportManager.IterateIncoming(false);
 
                 Tick++;
                 OnTick?.Invoke(Tick);
@@ -142,14 +125,24 @@ namespace FishNet.Managing.Timing
                     Physics.Simulate((float)timePerSimulation);
                     Physics2D.Simulate((float)timePerSimulation);
                 }
-                OnPostTick?.Invoke(Tick);
 
+                OnPostTick?.Invoke(Tick);
                 _elapsedTime -= timePerSimulation;
             }
 
             _stopwatch.Restart();
         }
 
+        /// <summary>
+        /// Converts uint ticks to time.
+        /// </summary>
+        /// <param name="ticks"></param>
+        /// <returns></returns>
+        public float TicksToTime(uint ticks)
+        {
+            double timePerSimulation = 1d / SimulationRate;
+            return (float)(timePerSimulation * ticks);
+        }
         /// <summary>
         /// Converts float time to ticks.
         /// </summary>
@@ -158,6 +151,44 @@ namespace FishNet.Managing.Timing
         public uint TimeToTicks(float time)
         {
             return (uint)Mathf.RoundToInt(time / (1f / SimulationRate));
+        }
+
+        /// <summary>
+        /// Adds network loops to gameObject.
+        /// </summary>
+        private void AddNetworkLoops()
+        {
+            //Writer.
+            if (!gameObject.TryGetComponent<NetworkWriterLoop>(out _))
+                gameObject.AddComponent<NetworkWriterLoop>();
+            //Reader.
+            if (!gameObject.TryGetComponent<NetworkReaderLoop>(out _))
+                gameObject.AddComponent<NetworkReaderLoop>();
+        }
+
+        /// <summary>
+        /// Called when FixedUpdate ticks. This is called before any other script.
+        /// </summary>
+        internal void TickFixedUpdate()
+        {
+            OnFixedUpdate?.Invoke();
+        }
+
+        /// <summary>
+        /// Called when Update ticks. This is called before any other script.
+        /// </summary>
+        internal void TickUpdate()
+        {
+            IncreaseTick();
+            OnUpdate?.Invoke();
+        }
+
+        /// <summary>
+        /// Called when LateUpdate ticks. This is called after all other scripts.
+        /// </summary>
+        internal void TickLateUpdate()
+        {
+            OnLateUpdate?.Invoke();
         }
 
     }

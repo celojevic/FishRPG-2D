@@ -222,28 +222,6 @@ namespace FishNet.Object
             return writer;
         }
 
-        #region Editor.
-#if UNITY_EDITOR
-        protected virtual void Reset()
-        {
-            /* Manually iterate up the chain because GetComponentInParent doesn't
-             * work when modifying prefabs in the inspector. Unity, you're starting
-             * to suck a lot right now. */
-            NetworkObject result = null;
-            Transform climb = transform;
-            while (climb != null)
-            {
-                if (climb.TryGetComponent<NetworkObject>(out result))
-                    break;
-                else
-                    climb = transform.parent;
-            }
-
-            if (result == null)
-                transform.root.gameObject.AddComponent<NetworkObject>();
-        }
-#endif
-        #endregion
     }
 
 

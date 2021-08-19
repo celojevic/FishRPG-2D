@@ -22,7 +22,13 @@ namespace FishNet.Object
     /// ObserversRpc methods will send messages to all observers.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class ObserversRpcAttribute : RpcAttribute { }
+    public class ObserversRpcAttribute : RpcAttribute
+    {
+        /// <summary>
+        /// True to also send data to the owner of object.
+        /// </summary>
+        public bool IncludeOwner = true;
+    }
 
     /// <summary>
     /// TargetRpc methods will send messages to a single client.

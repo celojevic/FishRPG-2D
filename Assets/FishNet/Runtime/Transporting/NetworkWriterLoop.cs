@@ -1,4 +1,4 @@
-﻿using FishNet.Managing.Transporting;
+﻿using FishNet.Managing.Timing;
 using UnityEngine;
 
 namespace FishNet.Transporting
@@ -9,14 +9,14 @@ namespace FishNet.Transporting
     {
         #region Private.
         /// <summary>
-        /// TransportManager this loop is for.
+        /// TimeManager this loop is for.
         /// </summary>
-        private TransportManager _transportManager = null;
+        private TimeManager _timeManager;
         #endregion
 
         private void Awake()
         {
-            _transportManager = GetComponent<TransportManager>();
+            _timeManager = GetComponent<TimeManager>();
         }
 
         private void LateUpdate()
@@ -29,11 +29,7 @@ namespace FishNet.Transporting
         /// </summary>
         private void Iterate()
         {
-            if (_transportManager != null)
-            {
-                _transportManager.IterateOutgoing(true);
-                _transportManager.IterateOutgoing(false);
-            }
+            _timeManager.TickLateUpdate();
         }
 
     }
