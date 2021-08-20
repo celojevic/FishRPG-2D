@@ -6,16 +6,39 @@ public class EquipmentItem : ItemBase
 
     [Header("Equipment")]
     public EquipmentSlot Slot;
-    public Sprite Paperdoll;
-    public RuntimeAnimatorController Controller;
+    public Appearance[] Appearance;
+    public StatValue[] Stats;
+
 
 }
 
 public enum EquipmentSlot
 {
-    None,
-
     Weapon,
 
+    // keep last
     Count
+}
+
+[System.Serializable]
+public class StatValue
+{
+    public StatBase Stat;
+    public float BaseValue;
+
+    public bool RandomStats;
+    public Vector2 ValueRange;
+}
+
+[System.Serializable]
+public class RandomStat
+{
+    public StatValue Stat;
+
+    public float Value;
+
+    public RandomStat()
+    {
+        Value = Random.Range(Stat.ValueRange.x, Stat.ValueRange.y);
+    }
 }

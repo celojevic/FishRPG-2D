@@ -63,6 +63,9 @@ public class UiInventory : UiPanel
             _slots[i].Setup(UiManager.Player.Inventory.Items[i]);
     }
 
+    /// <summary>
+    /// Sets up child UI inventory slots once on Start.
+    /// </summary>
     void SetupSlots()
     {
         Resize();

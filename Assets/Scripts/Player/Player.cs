@@ -28,7 +28,7 @@ public class Player : NetworkBehaviour
 
     #region Class
 
-    public ClassAppearance GetAppearance() => Class.Appearances[_appearanceIndex];
+    public Appearance GetAppearance() => Class.Appearances[_appearanceIndex];
 
     #endregion
 

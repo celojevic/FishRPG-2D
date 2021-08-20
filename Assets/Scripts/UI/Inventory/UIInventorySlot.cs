@@ -14,11 +14,6 @@ public class UIInventorySlot : UISlot
         _uiInventory = GetComponentInParent<UiInventory>();
     }
 
-    private void Start()
-    {
-        _itemIconImage.enabled = false;
-    }
-
     public void SetIconActive(bool active) => _itemIconImage.enabled = active;
 
     /// <summary>

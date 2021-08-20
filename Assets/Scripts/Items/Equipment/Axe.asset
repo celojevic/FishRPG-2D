@@ -12,9 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9f4e1fa06d0f3342b179563415a19fe, type: 3}
   m_Name: Axe
   m_EditorClassIdentifier: 
-  Sprite: {fileID: 0}
+  Sprite: {fileID: 21300000, guid: dfa815ff318df6e4eb04c2d414a89ea1, type: 3}
   LevelReq: 0
-  Description: 
+  Description: A regular blueish axe, what do u want?
   Slot: 1
-  Paperdoll: {fileID: 21300000, guid: dfa815ff318df6e4eb04c2d414a89ea1, type: 3}
-  Controller: {fileID: 0}
+  Appearance:
+  - Gender: 0
+    Sprite: {fileID: 21300000, guid: dfa815ff318df6e4eb04c2d414a89ea1, type: 3}
+    Controller: {fileID: 0}
+    DialogueSprite: {fileID: 0}
+  Stats:
+  - Stat: {fileID: 11400000, guid: 5b9e7522a3b05894aae471648d99dea3, type: 2}
+    BaseValue: 5
+    RandomStats: 0
+    ValueRange: {x: 3, y: 7}
+  - Stat: {fileID: 11400000, guid: 881eb772b0a01b845a7e8eba0707c876, type: 2}
+    BaseValue: 1
+    RandomStats: 0
+    ValueRange: {x: 0.8, y: 1.2}

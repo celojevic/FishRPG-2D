@@ -35,6 +35,11 @@ public class Database : MonoBehaviour
 
     #endregion
 
+    #region Stats
+
+    public List<StatBase> Stats = new List<StatBase>();
+
+    #endregion
 
 }
 
@@ -63,9 +68,8 @@ public class DatabaseEditor : Editor
     {
         _db.ItemBases = EditorUtils.FindScriptableObjects<ItemBase>();
         _db.Classes = EditorUtils.FindScriptableObjects<ClassBase>();
+        _db.Stats = EditorUtils.FindScriptableObjects<StatBase>();
     }
-
-
 
 }
 

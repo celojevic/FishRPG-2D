@@ -11,10 +11,6 @@ public class UiPanel : MonoBehaviour
     [SerializeField] private GameObject _panel = null;
     [SerializeField] private KeyCode _key = KeyCode.None;
 
-    /// <summary>
-    /// Sets the panel inactive and subscribes to events. 
-    /// Must call base method in overrides.
-    /// </summary>
     internal void OnStart()
     {
         _panel.SetActive(false);

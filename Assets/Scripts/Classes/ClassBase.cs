@@ -6,7 +6,7 @@ public class ClassBase : ScriptableObject
 
     [Header("Classes")]
     [Tooltip("Allows for a class to look different based on gender or anything else.")]
-    public ClassAppearance[] Appearances;
+    public Appearance[] Appearances;
     public ItemBase[] StartingItems;
 
     // regen %
@@ -28,7 +28,7 @@ public class ClassBase : ScriptableObject
 }
 
 [System.Serializable]
-public class ClassAppearance
+public class Appearance
 {
 
     public Gender Gender;
