@@ -16,13 +16,9 @@ public class VitalBase : NetworkBehaviour
             if (value == _current) return;
 
             _current = value;
-            //OnVitalChanged?.Invoke();
         }
     }
-    void OnCurrentChanged(int oldVal, int newVal, bool asServer)
-    {
-        OnVitalChanged?.Invoke();
-    }
+    void OnCurrentChanged(int oldVal, int newVal, bool asServer) => OnVitalChanged?.Invoke();
 
     internal float Percent => (float)CurrentVital / (float)MaxVital;
 
@@ -45,6 +41,7 @@ public class VitalBase : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
         //debug
         if (Input.GetKeyDown(KeyCode.K))
             Hurt();
@@ -66,10 +63,15 @@ public class VitalBase : NetworkBehaviour
     {
         CurrentVital = Mathf.Clamp(CurrentVital + amount, _minVital, MaxVital);
 
+        // TODO spawn on enemy world canvas if enemy in SpawnActionMsg
+        // TODO make virtual void and override these in Healht/Mana
         if (this is Health)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", Color.green);
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", 
+                Color.green, gameObject);
         else if (this is Mana)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", Color.cyan);
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", 
+                Color.cyan, gameObject);
+    
     }
 
     [Server]
@@ -78,9 +80,11 @@ public class VitalBase : NetworkBehaviour
         CurrentVital = Mathf.Clamp(CurrentVital - amount, _minVital, MaxVital);
 
         if (this is Health)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", Color.red);
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", 
+                Color.red, gameObject);
         else if (this is Mana)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", Color.magenta);
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", 
+                Color.magenta, gameObject);
 
         if (CurrentVital == _minVital)
             OnDepleted?.Invoke();

@@ -13,7 +13,8 @@ public class PlayerInit : NetworkBehaviour
         if (isOwner)
         {
             // init camera
-            GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CinemachineVirtualCamera>()
+            GameObject.FindGameObjectWithTag("MainCamera")
+                .GetComponentInChildren<CinemachineVirtualCamera>()
                 .Follow = transform;
 
             // init UI

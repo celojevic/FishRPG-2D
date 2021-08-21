@@ -5,7 +5,10 @@ using UnityEngine;
 public class PlayerVisuals : NetworkBehaviour
 {
 
+    [Tooltip("The SpriteRenderer for the player's base sprite.")]
     [SerializeField] private SpriteRenderer _sr = null;
+    public SpriteRenderer GetBaseRenderer() => _sr;
+
     [SerializeField, EnumNameArray(typeof(EquipmentSlot))] 
     private SpriteRenderer[] _equipmentRenderers = new SpriteRenderer[(int)EquipmentSlot.Count];
 

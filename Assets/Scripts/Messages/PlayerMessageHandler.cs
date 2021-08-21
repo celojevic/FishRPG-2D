@@ -25,7 +25,7 @@ public class PlayerMessageHandler : MonoBehaviour
         switch (msg.Type)
         {
             case MessageType.Action:
-                SpawnActionMsg(transform.position, msg);
+                SpawnActionMsg(msg);
                 break;
 
             case MessageType.Chat:
@@ -33,33 +33,38 @@ public class PlayerMessageHandler : MonoBehaviour
         }
     }
 
-    public void SpawnActionMsg(Vector2 pos, SendMsg msg)
+    public void SpawnActionMsg(SendMsg msg)
     {
-        var actionMsg = Instantiate(_actionMsgPrefab,
-            pos + (Vector2.up + Random.insideUnitCircle) / 2f, // adds offset and randomness
+        var actionMsg = Instantiate(
+            _actionMsgPrefab,
+            (Vector2)msg.Go.transform.position + (Vector2.up + Random.insideUnitCircle) / 2f, // adds offset and randomness
             Quaternion.identity,
-            _worldCanvas.transform
+            msg.Go.GetComponentInChildren<Canvas>()?.transform
         );
         actionMsg.Setup(msg.Text, msg.Color);
     }
 
     #region Server
 
-    // TODO if conn == null, send to observers
-    //NetworkManager.ServerManager.Broadcast(NetworkObject.Observers, msg, true, FishNet.Transporting.Channel.Reliable);
     [Server]
     public static void SendPlayerMsg(NetworkConnection conn, MessageType type, string text, 
-        Color color = new Color())
+        Color color = new Color(), GameObject go = null)
     {
+        var msg = new SendMsg
+        {
+            Type = type,
+            Text = text,
+            Color = color,
+            Go = go
+        };
+
         if (conn != null)
         {
-            //TargetSendActionMsg(conn, text, color);
-            conn.Broadcast(new SendMsg
-            {
-                Type = type,
-                Text = text,
-                Color = color
-            });
+            conn.Broadcast(msg);
+        }
+        else
+        {
+            InstanceFinder.ServerManager.Broadcast(msg);
         }
     }
 
@@ -69,9 +74,15 @@ public class PlayerMessageHandler : MonoBehaviour
 
 public struct SendMsg : IBroadcast
 {
+
     public MessageType Type;
+
     public string Text;
+
     public Color Color;
+
+    public GameObject Go;
+
 }
 
 public enum MessageType

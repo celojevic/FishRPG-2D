@@ -9,13 +9,20 @@ public class Player : NetworkBehaviour
     private byte _appearanceIndex = 0;
 
     [Header("Components")]
+    public PlayerCombat Combat;
     public PlayerEquipment Equipment;
     public PlayerInput Input;
     public PlayerInventory Inventory;
     public PlayerMovement Movement;
     public PlayerVisuals Visuals;
-
     public VitalBase[] Vitals;
+
+    /// <summary>
+    /// Returns the true center of the player sprite.
+    /// TODO should be based on sprite then
+    /// </summary>
+    /// <returns></returns>
+    internal Vector2 GetCenter() => transform.position + new Vector3(0f, 0.5f);
 
     private void Awake()
     {

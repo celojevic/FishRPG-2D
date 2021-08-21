@@ -1,6 +1,7 @@
+using FishNet.Object;
 using UnityEngine;
 
-public class Enemy : MonoBehaviour
+public class Enemy : NetworkBehaviour
 {
 
 
