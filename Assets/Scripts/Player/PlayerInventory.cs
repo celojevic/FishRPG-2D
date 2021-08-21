@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Object;
 
@@ -25,6 +24,11 @@ public class PlayerInventory : Inventory
                 if (item is ConsumableItem consumable)
                 {
                     if (consumable.Use(_player))
+                        NetItems.RemoveAt(slotIndex);
+                }
+                else if (item is EquipmentItem equipment)
+                {
+                    if (_player.Equipment.Equip(equipment))
                         NetItems.RemoveAt(slotIndex);
                 }
             }

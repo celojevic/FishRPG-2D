@@ -340,6 +340,7 @@ MonoBehaviour:
   Classes:
   - {fileID: 11400000, guid: 50108271fe796b947864b10075fd2136, type: 2}
   Stats:
+  - {fileID: 11400000, guid: 881eb772b0a01b845a7e8eba0707c876, type: 2}
   - {fileID: 11400000, guid: 5b9e7522a3b05894aae471648d99dea3, type: 2}
   - {fileID: 11400000, guid: 4bad4c3cad1919f4d9b9efa60ca81e5e, type: 2}
   - {fileID: 11400000, guid: ce6fe9d05c94f8a4595deac34c256fa5, type: 2}
@@ -1722,7 +1723,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 106.2, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1630059570

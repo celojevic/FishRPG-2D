@@ -9,6 +9,7 @@ public class Player : NetworkBehaviour
     private byte _appearanceIndex = 0;
 
     [Header("Components")]
+    public PlayerEquipment Equipment;
     public PlayerInput Input;
     public PlayerInventory Inventory;
     public PlayerMovement Movement;
@@ -18,11 +19,11 @@ public class Player : NetworkBehaviour
 
     private void Awake()
     {
+        Equipment = GetComponent<PlayerEquipment>();
         Input = GetComponent<PlayerInput>();
         Inventory = GetComponent<PlayerInventory>();
         Movement = GetComponent<PlayerMovement>();
         Visuals = GetComponent<PlayerVisuals>();
-
         Vitals = GetComponents<VitalBase>();
     }
 

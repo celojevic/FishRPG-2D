@@ -9,10 +9,20 @@ public class EquipmentItem : ItemBase
     public Appearance[] Appearance;
     public StatValue[] Stats;
 
+    public NetEquipment ToNetEquip() => new NetEquipment { ItemBaseGuid = base.Guid };
+
+    private void OnValidate()
+    {
+        if (Slot == EquipmentSlot.Count)
+        {
+            Debug.LogWarning($"Can't set slot to Count. Set a valid slot for {name}.");
+            Slot = EquipmentSlot.Weapon;
+        }
+    }
 
 }
 
-public enum EquipmentSlot
+public enum EquipmentSlot : byte
 {
     Weapon,
 

@@ -133,7 +133,10 @@ namespace FishNet.Object.Synchronizing
              * It may not be set if results are being populated
              * in Awake. */
             if (base.NetworkBehaviour == null)
+            {
+                Debug.Log("NB null");
                 return;
+            }
 
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
