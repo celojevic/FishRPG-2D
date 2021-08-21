@@ -75,9 +75,9 @@ public class PlayerCombat : NetworkBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(_player.GetCenter(), _attackDir);
-        Gizmos.DrawWireSphere(_player.GetCenter() + _attackDir.normalized * _range, _aoeRadius);
+        //Gizmos.color = Color.red;
+        //Gizmos.DrawRay(_player.GetCenter(), _attackDir);
+        //Gizmos.DrawWireSphere(_player.GetCenter() + _attackDir.normalized * _range, _aoeRadius);
     }
 
 }
