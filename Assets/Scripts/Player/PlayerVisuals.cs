@@ -6,12 +6,14 @@ public class PlayerVisuals : NetworkBehaviour
 {
 
     [SerializeField] private SpriteRenderer _sr = null;
+    [SerializeField, EnumNameArray(typeof(EquipmentSlot))] 
+    private SpriteRenderer[] _equipmentRenderers = new SpriteRenderer[(int)EquipmentSlot.Count];
 
     /// <summary>
     /// The master Player script.
     /// </summary>
     private Player _player;
-    private Animation _currentAnimation;
+    private Anim _currentAnimation;
     private NetworkAnimator _netAnimator;
 
     private void Awake()
@@ -57,21 +59,23 @@ public class PlayerVisuals : NetworkBehaviour
         if (_sr.flipX == flip) return;
 
         _sr.flipX = flip;
+        foreach (var item in _equipmentRenderers)
+            item.flipX = flip;
     }
 
     void CheckAnimation()
     {
         if (_player.Input.InputVector != Vector2.zero)
         {
-            ChangeAnimation(Animation.Walk);
+            ChangeAnimation(Anim.Walk);
         }
         else
         {
-            ChangeAnimation(Animation.Idle);
+            ChangeAnimation(Anim.Idle);
         }
     }
 
-    void ChangeAnimation(Animation animation)
+    void ChangeAnimation(Anim animation)
     {
         if (_currentAnimation == animation) return;
 
@@ -79,7 +83,12 @@ public class PlayerVisuals : NetworkBehaviour
         _netAnimator.Play(animation.ToString());
     }
 
-    private enum Animation : byte
+    public void SetEquipmentSprite(EquipmentSlot slot, Sprite sprite)
+    {
+        _equipmentRenderers[(int)slot].sprite = sprite;
+    }
+
+    private enum Anim : byte
     {
         Idle,
         Walk

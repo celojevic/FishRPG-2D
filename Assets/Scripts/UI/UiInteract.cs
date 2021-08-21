@@ -11,11 +11,11 @@ public class UiInteract : MonoBehaviour
 
     private void Awake()
     {
-        var texts = GetComponentsInChildren<TMP_Text>();
+        var texts = GetComponentsInChildren<TMP_Text>(true);
         _nameText = texts[0];
         _keyText = texts[1];
 
-        _keyImage = GetComponentInChildren<Image>();
+        _keyImage = GetComponentInChildren<Image>(true);
     }
 
     private void Start()

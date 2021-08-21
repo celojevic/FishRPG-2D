@@ -13,12 +13,14 @@ public class UiPanel : MonoBehaviour
 
     internal void OnStart()
     {
+        _panel.transform.position = PlayerPrefs.GetString(this.name, _panel.transform.position.ToString()).ToVector3();
         _panel.SetActive(false);
         UiManager.OnPlayerAssigned += UiManager_OnPlayerAssigned;
     }
 
     internal void OnStop()
     {
+        PlayerPrefs.SetString(this.name, _panel.transform.position.ToString());
         UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
     }
 

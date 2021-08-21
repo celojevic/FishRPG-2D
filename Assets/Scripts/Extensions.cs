@@ -22,6 +22,22 @@ public static class Extensions
 
     #endregion
 
+    #region Strings
+
+    public static Vector3 ToVector3(this string vecString)
+    {
+        var splits = vecString.Split('(', ',', ')');
+        if (splits.Length != 5)
+        {
+            Debug.LogWarning("Invalid vector string.");
+            return Vector3.zero;
+        }
+
+        return new Vector3(float.Parse(splits[1]), float.Parse(splits[2]), float.Parse(splits[3]));
+    }
+
+    #endregion
+
     #region T - IsValid
 
     public static bool IsValid<T>(this T[] array) => array != null && array.Length > 0;
@@ -31,5 +47,6 @@ public static class Extensions
     public static bool IsValid<T>(this Queue<T> queue) => queue != null && queue.Count > 0;
 
     #endregion
+
 
 }

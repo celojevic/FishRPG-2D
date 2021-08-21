@@ -1,5 +1,4 @@
 using TMPro;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,8 +10,8 @@ public class UITooltip : MonoBehaviour
 
     private void Awake()
     {
-        _background = GetComponentInChildren<Image>();
-        _text = GetComponentInChildren<TMP_Text>();
+        _background = GetComponentInChildren<Image>(true);
+        _text = GetComponentInChildren<TMP_Text>(true);
         Hide();
     }
 

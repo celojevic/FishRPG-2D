@@ -51,6 +51,7 @@ public class PlayerEquipment : NetworkBehaviour
         {
             case SyncListOperation.Set:
                 Equipment[index] = newItem?.ToEquipItem();
+                _player.Visuals.SetEquipmentSprite((EquipmentSlot)index, Equipment[index]?.Sprite);
                 break;
         }
 
