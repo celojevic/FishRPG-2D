@@ -247,7 +247,7 @@ namespace FishNet.CodeGenerating.Helping
             if (writeMethodRef == null)
                 writeMethodRef = CodegenSession.WriterGenerator.CreateWriter(typeRef);
             if (writeMethodRef == null)
-                CodegenSession.Diagnostics.AddError($"Could not create serializer for {typeRef.FullName}.");
+                CodegenSession.LogError($"Could not create serializer for {typeRef.FullName}.");
 
             return writeMethodRef;
         }
@@ -398,7 +398,7 @@ namespace FishNet.CodeGenerating.Helping
                 }
                 else
                 {
-                    CodegenSession.Diagnostics.AddError($"{writerDef.GetType().FullName} is not a valid writerDef. Type must be VariableDefinition or ParameterDefinition.");
+                    CodegenSession.LogError($"{writerDef.GetType().FullName} is not a valid writerDef. Type must be VariableDefinition or ParameterDefinition.");
                     return;
                 }
                 processor.Emit(OpCodes.Ldarg, valueParameterDef);
@@ -412,7 +412,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                CodegenSession.Diagnostics.AddError($"Writer not found for {valueParameterDef.ParameterType.FullName}.");
+                CodegenSession.LogError($"Writer not found for {valueParameterDef.ParameterType.FullName}.");
             }
         }
         /// <summary>
@@ -439,7 +439,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                CodegenSession.Diagnostics.AddError($"Writer not found for {fieldDef.FieldType.FullName}.");
+                CodegenSession.LogError($"Writer not found for {fieldDef.FieldType.FullName}.");
             }
         }
 

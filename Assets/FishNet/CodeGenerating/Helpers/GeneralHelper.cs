@@ -38,7 +38,7 @@ namespace FishNet.CodeGenerating.Helping
             Type debugType = typeof(UnityEngine.Debug);
             foreach (System.Reflection.MethodInfo methodInfo in debugType.GetMethods())
             {
-                if (methodInfo.Name == nameof(UnityEngine.Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
+                if (methodInfo.Name == nameof(Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
                     Debug_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
@@ -456,7 +456,7 @@ namespace FishNet.CodeGenerating.Helping
                 MethodDefinition constructorMethodDef = type.ResolveDefaultPublicConstructor();
                 if (constructorMethodDef == null)
                 {
-                    CodegenSession.Diagnostics.AddError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");
+                    CodegenSession.LogError($"{type.Name} can't be deserialized because a default constructor could not be found. Create a default constructor or a custom serializer/deserializer.");
                     return;
                 }
 

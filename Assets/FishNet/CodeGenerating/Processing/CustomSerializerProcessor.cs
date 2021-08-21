@@ -247,12 +247,12 @@ namespace FishNet.CodeGenerating.Processing
 
             if (write && methodDef.Parameters.Count < 2)
             {
-                CodegenSession.Diagnostics.AddError($"{methodDef.FullName} must have at least two parameters, the first being PooledWriter, and second value to write.");
+                CodegenSession.LogError($"{methodDef.FullName} must have at least two parameters, the first being PooledWriter, and second value to write.");
                 return ExtensionType.None;
             }
             else if (!write && methodDef.Parameters.Count < 1)
             {
-                CodegenSession.Diagnostics.AddError($"{methodDef.FullName} must have at least one parameters, the first being PooledReader.");
+                CodegenSession.LogError($"{methodDef.FullName} must have at least one parameters, the first being PooledReader.");
                 return ExtensionType.None;
             }
 

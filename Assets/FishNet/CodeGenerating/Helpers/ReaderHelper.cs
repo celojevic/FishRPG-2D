@@ -317,7 +317,7 @@ namespace FishNet.CodeGenerating.Helping
             if (readMethodRef == null)
                 readMethodRef = CodegenSession.ReaderGenerator.CreateReader(typeRef);
             if (readMethodRef == null)
-                CodegenSession.Diagnostics.AddError($"Could not create deserializer for {typeRef.FullName}.");
+                CodegenSession.LogError($"Could not create deserializer for {typeRef.FullName}.");
 
             return readMethodRef;
         }
@@ -396,7 +396,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                CodegenSession.Diagnostics.AddError("Reader not found for " + readTypeRef.ToString());
+                CodegenSession.LogError("Reader not found for " + readTypeRef.ToString());
                 createdVariableDef = null;
                 return null;
             }
@@ -439,7 +439,7 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                CodegenSession.Diagnostics.AddError($"Reader not found for {fieldDef.FullName}.");
+                CodegenSession.LogError($"Reader not found for {fieldDef.FullName}.");
                 return false;
             }
         }

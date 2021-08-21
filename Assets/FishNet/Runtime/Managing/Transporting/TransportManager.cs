@@ -115,7 +115,7 @@ namespace FishNet.Managing.Transporting
                 byte reliableChannelId = (byte)Channel.Reliable;
                 for (int i = 0; i < _outgoingSplit.WrittenBuffers; i++)
                 {
-                    SharedBuffer sb = _outgoingSplit.GetBuffer(i);
+                    ByteBuffer sb = _outgoingSplit.GetBuffer(i);
                     if (sb != null && sb.Length > 0)
                     {
                         ArraySegment<byte> splitSegment = new ArraySegment<byte>(sb.Data, 0, sb.Length);
@@ -199,7 +199,7 @@ namespace FishNet.Managing.Transporting
             {
                 for (int i = 0; i < _outgoingSplit.WrittenBuffers; i++)
                 {
-                    SharedBuffer sb = _outgoingSplit.GetBuffer(i);
+                    ByteBuffer sb = _outgoingSplit.GetBuffer(i);
                     if (sb != null && sb.Length > 0)
                     {
                         ArraySegment<byte> splitSegment = new ArraySegment<byte>(sb.Data, 0, sb.Length);
@@ -319,7 +319,7 @@ namespace FishNet.Managing.Transporting
                         {
                             for (int i = 0; i < pb.WrittenBuffers; i++)
                             {
-                                SharedBuffer sb = pb.GetBuffer(i);
+                                ByteBuffer sb = pb.GetBuffer(i);
                                 //Length should always be more than 0 but check to be safe.
                                 if (sb != null && sb.Length > 0)
                                 {
@@ -353,7 +353,7 @@ namespace FishNet.Managing.Transporting
                     {
                         for (int i = 0; i < pb.WrittenBuffers; i++)
                         {
-                            SharedBuffer sb = pb.GetBuffer(i);
+                            ByteBuffer sb = pb.GetBuffer(i);
                             //Length should always be more than 0 but check to be safe.
                             if (sb != null && sb.Length > 0)
                             {

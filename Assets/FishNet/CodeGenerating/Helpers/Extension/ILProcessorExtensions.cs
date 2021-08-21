@@ -55,7 +55,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         {
             if (processor.Body.Method.ReturnType != CodegenSession.Module.TypeSystem.Void)
             {
-                CodegenSession.Diagnostics.AddError($"Cannot insert instructions before returns on {processor.Body.Method.FullName} because it does not return void.");
+                CodegenSession.LogError($"Cannot insert instructions before returns on {processor.Body.Method.FullName} because it does not return void.");
                 return;
             }
 

@@ -143,7 +143,7 @@ namespace FishNet.CodeGenerating.Helping
                 Type elementMonoType = elementTypeRef.GetMonoType();
                 if (elementMonoType == null)
                 {
-                    CodegenSession.Diagnostics.AddError($"Mono Type could not be found for {elementMonoType.FullName}.");
+                    CodegenSession.LogError($"Mono Type could not be found for {elementMonoType.FullName}.");
                     return null;
                 }
                 Type constructedListType = typeof(List<>).MakeGenericType(elementMonoType);
@@ -159,7 +159,7 @@ namespace FishNet.CodeGenerating.Helping
 
                 if (item == null)
                 {
-                    CodegenSession.Diagnostics.AddError($"Count or Item property could not be found for {elementMonoType.FullName}.");
+                    CodegenSession.LogError($"Count or Item property could not be found for {elementMonoType.FullName}.");
                     return null;
                 }
 

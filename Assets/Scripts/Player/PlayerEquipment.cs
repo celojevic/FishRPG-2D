@@ -9,7 +9,7 @@ public class PlayerEquipment : NetworkBehaviour
 {
 
     [EnumNameArray(typeof(EquipmentSlot))]
-    public SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
+    public readonly SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
     public List<EquipmentItem> Equipment = new List<EquipmentItem>();
 
     private void Start()

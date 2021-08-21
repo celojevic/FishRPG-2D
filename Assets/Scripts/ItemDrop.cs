@@ -34,8 +34,9 @@ public class ItemDrop : Interactable
     #region Editor
 #if UNITY_EDITOR
 
-    private void OnValidate()
+    protected override void OnValidate()
     {
+        base.OnValidate();
         if (_sr == null || ItemValue == null || ItemValue.Item == null) return;
 
         if (_sr.sprite != ItemValue.Item.Sprite)

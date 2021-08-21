@@ -29,7 +29,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (CodegenSession.WriterHelper.GetFavoredWriteMethodReference(objectTypeRef, true) != null)
                 {
-                    CodegenSession.Diagnostics.AddError($"Writer already exist for {objectTypeRef.FullName}.");
+                    CodegenSession.LogError($"Writer already exist for {objectTypeRef.FullName}.");
                     return SerializerType.Invalid;
                 }
             }
@@ -37,7 +37,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (CodegenSession.ReaderHelper.GetFavoredReadMethodReference(objectTypeRef, true) != null)
                 {
-                    CodegenSession.Diagnostics.AddError($"Reader already exist for {objectTypeRef.FullName}.");
+                    CodegenSession.LogError($"Reader already exist for {objectTypeRef.FullName}.");
                     return SerializerType.Invalid;
                 }
             }
@@ -46,13 +46,13 @@ namespace FishNet.CodeGenerating.Helping
             //Invalid typeDef.
             if (objectTypeDef == null)
             {
-                CodegenSession.Diagnostics.AddError($"{errorPrefix}{objectTypeDef.FullName} could not be resolved.");
+                CodegenSession.LogError($"{errorPrefix}{objectTypeDef.FullName} could not be resolved.");
                 return SerializerType.Invalid;
             }
             //By reference.            
             if (objectTypeRef.IsByReference)
             {
-                CodegenSession.Diagnostics.AddError($"{errorPrefix}Cannot pass {objectTypeRef.Name} by reference");
+                CodegenSession.LogError($"{errorPrefix}Cannot pass {objectTypeRef.Name} by reference");
                 return SerializerType.Invalid;
             }
             /* Arrays have to be processed first because it's possible for them to meet other conditions
@@ -61,7 +61,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (objectTypeRef.IsMultidimensionalArray())
                 {
-                    CodegenSession.Diagnostics.AddError($"{errorPrefix}{objectTypeRef.Name} is an unsupported type. Multidimensional arrays are not supported");
+                    CodegenSession.LogError($"{errorPrefix}{objectTypeRef.Name} is an unsupported type. Multidimensional arrays are not supported");
                     return SerializerType.Invalid;
                 }
                 else
@@ -99,7 +99,7 @@ namespace FishNet.CodeGenerating.Helping
             //Unknown type.
             else
             {
-                CodegenSession.Diagnostics.AddError($"{errorPrefix}{objectTypeRef.Name} is an unsupported type. Mostly because we don't know what the heck it is. Please let us know so we can fix this.");
+                CodegenSession.LogError($"{errorPrefix}{objectTypeRef.Name} is an unsupported type. Mostly because we don't know what the heck it is. Please let us know so we can fix this.");
                 return SerializerType.Invalid;
             }
         }
@@ -116,43 +116,43 @@ namespace FishNet.CodeGenerating.Helping
             //Unable to determine type, cannot generate for.
             if (objectTypeDef == null)
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //Component.
             if (objectTypeDef.IsDerivedFrom<UnityEngine.Component>())
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //Unity Object.
             if (objectTypeDef.Is(typeof(UnityEngine.Object)))
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //ScriptableObject.
             if (objectTypeDef.Is(typeof(UnityEngine.ScriptableObject)))
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //Has generic parameters.
             if (objectTypeDef.HasGenericParameters)
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //Is an interface.
             if (objectTypeDef.IsInterface)
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
             //Is abstract.
             if (objectTypeDef.IsAbstract)
             {
-                CodegenSession.Diagnostics.AddError(errorText);
+                CodegenSession.LogError(errorText);
                 return false;
             }
 

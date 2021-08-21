@@ -7,9 +7,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Cecil.Rocks;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -61,20 +59,11 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
 
                 if (st == SyncType.Variable)
-                {
-                    //TryCreateSyncVarCollection(typeDef);
                     TryCreateSyncVar(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
-                }
                 else if (st == SyncType.List)
-                {
-                    //TryCreateSyncObjectCollection(typeDef);
                     TryCreateSyncList(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
-                }
                 else if (st == SyncType.Dictionary)
-                {
-                    //TryCreateSyncObjectCollection(typeDef);
                     TryCreateSyncDictionary(allProcessedSyncs.Count, allProcessedSyncs, typeDef, fieldDef);
-                }
 
                 modified = true;
             }
@@ -123,6 +112,12 @@ namespace FishNet.CodeGenerating.Processing
         /// <param name="diagnostics"></param>
         private void TryCreateSyncList(int syncTypeCount, List<(SyncType, ProcessedSync)> allProcessedSyncs, TypeDefinition typeDef, FieldDefinition originalFieldDef)
         {
+            if (!originalFieldDef.Attributes.HasFlag(FieldAttributes.InitOnly) || originalFieldDef.Attributes.HasFlag(FieldAttributes.Static))
+            {
+                CodegenSession.LogError($"SyncList {originalFieldDef.FullName} cannot be static and must be readonly.");
+                return;
+            }
+
             bool error;
             CustomAttribute syncAttribute = GetSyncObjectAttribute(originalFieldDef, out error);
             if (error)
@@ -137,7 +132,7 @@ namespace FishNet.CodeGenerating.Processing
             bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(dataTypeRef, true);
             if (!canSerialize)
             {
-                CodegenSession.Diagnostics.AddError($"SyncObject {originalFieldDef.Name} data type {monoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                CodegenSession.LogError($"SyncObject {originalFieldDef.Name} data type {monoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                 return;
             }
 
@@ -175,14 +170,14 @@ namespace FishNet.CodeGenerating.Processing
             canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(keyTypeRef, true);
             if (!canSerialize)
             {
-                CodegenSession.Diagnostics.AddError($"SyncObject {originalFieldDef.Name} key type {keyMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                CodegenSession.LogError($"SyncObject {originalFieldDef.Name} key type {keyMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                 return;
             }
             //Check value serializer.
             canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(valueTypeRef, true);
             if (!canSerialize)
             {
-                CodegenSession.Diagnostics.AddError($"SyncObject {originalFieldDef.Name} value type {valueMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                CodegenSession.LogError($"SyncObject {originalFieldDef.Name} value type {valueMonoType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                 return;
             }
 
@@ -204,7 +199,7 @@ namespace FishNet.CodeGenerating.Processing
             CustomAttribute syncAttribute = GetSyncVarAttribute(fieldDef);
             if (syncAttribute == null)
             {
-                CodegenSession.Diagnostics.AddError($"Tried to create SyncVar for {fieldDef.FullName} but syncAttribute is null.");
+                CodegenSession.LogError($"Tried to create SyncVar for {fieldDef.FullName} but syncAttribute is null.");
                 return;
             }
 
@@ -238,19 +233,19 @@ namespace FishNet.CodeGenerating.Processing
                 //A syncvar attribute already exist.
                 if (foundAttribute != null)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} cannot have multiple SyncObject attributes.");
+                    CodegenSession.LogError($"{fieldDef.Name} cannot have multiple SyncObject attributes.");
                     error = true;
                 }
                 //Static.
                 if (fieldDef.IsStatic)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} SyncObject cannot be static.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncObject cannot be static.");
                     error = true;
                 }
                 //Generic.
                 if (fieldDef.FieldType.IsGenericParameter)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} SyncObject cannot be be generic.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncObject cannot be be generic.");
                     error = true;
                 }
 
@@ -286,19 +281,19 @@ namespace FishNet.CodeGenerating.Processing
                 //A syncvar attribute already exist.
                 if (foundAttribute != null)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} cannot have multiple SyncVar attributes.");
+                    CodegenSession.LogError($"{fieldDef.Name} cannot have multiple SyncVar attributes.");
                     error = true;
                 }
                 //Static.
                 if (fieldDef.IsStatic)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} SyncVar cannot be static.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncVar cannot be static.");
                     error = true;
                 }
                 //Generic.
                 if (fieldDef.FieldType.IsGenericParameter)
                 {
-                    CodegenSession.Diagnostics.AddError($"{fieldDef.Name} SyncVar cannot be be generic.");
+                    CodegenSession.LogError($"{fieldDef.Name} SyncVar cannot be be generic.");
                     error = true;
                 }
 
@@ -312,7 +307,7 @@ namespace FishNet.CodeGenerating.Processing
                 bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(fieldDef.FieldType, true);
                 if (!canSerialize)
                 {
-                    CodegenSession.Diagnostics.AddError($"SyncVar {fieldDef.FullName} field type {fieldDef.FieldType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                    CodegenSession.LogError($"SyncVar {fieldDef.FullName} field type {fieldDef.FieldType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                     error = true;
                 }
             }
@@ -389,7 +384,7 @@ namespace FishNet.CodeGenerating.Processing
             FieldDefinition createdFieldDef = new FieldDefinition($"{SYNCHANDLER_PREFIX}{originalFieldDef.Name}", originalFieldDef.Attributes, syncStubTypeDef);
             if (createdFieldDef == null)
             {
-                CodegenSession.Diagnostics.AddError($"Could not create field for Sync type {originalFieldDef.FieldType.FullName}, name of {originalFieldDef.Name}.");
+                CodegenSession.LogError($"Could not create field for Sync type {originalFieldDef.FieldType.FullName}, name of {originalFieldDef.Name}.");
                 return null;
             }
 
@@ -419,7 +414,7 @@ namespace FishNet.CodeGenerating.Processing
                 //Not correct number of parameters.
                 if (md.Parameters.Count != 3)
                 {
-                    CodegenSession.Diagnostics.AddError(incorrectParametersMsg);
+                    CodegenSession.LogError(incorrectParametersMsg);
                     return null;
                 }
                 //One or more parameters are wrong.
@@ -428,7 +423,7 @@ namespace FishNet.CodeGenerating.Processing
                     md.Parameters[1].ParameterType != originalFieldDef.FieldType ||
                     md.Parameters[2].ParameterType != CodegenSession.Module.TypeSystem.Boolean)
                 {
-                    CodegenSession.Diagnostics.AddError(incorrectParametersMsg);
+                    CodegenSession.LogError(incorrectParametersMsg);
                     return null;
                 }
 
@@ -438,7 +433,7 @@ namespace FishNet.CodeGenerating.Processing
             //Hook specified but no method found.
             else
             {
-                CodegenSession.Diagnostics.AddError($"Could not find method name {hook} for SyncType {originalFieldDef.FullName}.");
+                CodegenSession.LogError($"Could not find method name {hook} for SyncType {originalFieldDef.FullName}.");
                 return null;
             }
         }
@@ -621,8 +616,8 @@ namespace FishNet.CodeGenerating.Processing
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this again for NetworkBehaviour.
             instructions.Add(processor.Create(OpCodes.Ldc_I4, (int)hash));
             instructions.Add(processor.Create(OpCodes.Callvirt, setSyncIndexMethodRef));
-            processor.InsertLast(instructions);
 
+            processor.InsertLast(instructions);
 
             return true;
         }
@@ -717,7 +712,7 @@ namespace FishNet.CodeGenerating.Processing
             }
             else
             {
-                CodegenSession.Diagnostics.AddError($"Created constructor not found for SyncType {originalFieldDef.DeclaringType}.");
+                CodegenSession.LogError($"Created constructor not found for SyncType {originalFieldDef.DeclaringType}.");
                 return;
             }
 
@@ -784,7 +779,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             if (methodDef == null)
             {
-                CodegenSession.Diagnostics.AddError($"An object expecting value was null. Please try saving your script again.");
+                CodegenSession.LogError($"An object expecting value was null. Please try saving your script again.");
                 return;
             }
             if (methodDef.IsAbstract)
@@ -1083,7 +1078,7 @@ namespace FishNet.CodeGenerating.Processing
             }
 
             /* Fall through, not found. */
-            CodegenSession.Diagnostics.AddError($"Unable to find user referenced field for {resolvedOpField.Name}.");
+            CodegenSession.LogError($"Unable to find user referenced field for {resolvedOpField.Name}.");
             return null;
         }
     }

@@ -153,7 +153,7 @@ namespace FishNet.CodeGenerating.Helping
             //Check if writer already exist.
             if (_delegatedTypes.Contains(dataTypeRef))
             {
-                CodegenSession.Diagnostics.AddError($"Generic write already created for {dataTypeRef.FullName}.");
+                CodegenSession.LogError($"Generic write already created for {dataTypeRef.FullName}.");
                 return;
             }
             else

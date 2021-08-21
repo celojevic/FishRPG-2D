@@ -102,7 +102,7 @@ namespace FishNet.CodeGenerating.Helping
                 }
                 else
                 {
-                    CodegenSession.Diagnostics.AddError($"Found created class for sync type {dataTypeRef.FullName} but was unable to find cached class data.");
+                    CodegenSession.LogError($"Found created class for sync type {dataTypeRef.FullName} but was unable to find cached class data.");
                     return null;
                 }
             }

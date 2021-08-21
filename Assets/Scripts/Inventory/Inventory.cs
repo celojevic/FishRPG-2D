@@ -10,7 +10,7 @@ public class Inventory : NetworkBehaviour
     [Tooltip("Data object for this inventory.")]
     [SerializeField] private InventoryData _data = null;
 
-    public SyncList<NetItemValue> NetItems = new SyncList<NetItemValue>();
+    public readonly SyncList<NetItemValue> NetItems = new SyncList<NetItemValue>();
     public List<ItemValue> Items = new List<ItemValue>();
 
     /// <summary>
@@ -99,8 +99,6 @@ public class Inventory : NetworkBehaviour
     }
 
     #endregion
-
-
 
     #region Helper Functions
 

@@ -572,7 +572,7 @@ namespace ENet
 		internal void ThrowIfNotCreated()
 		{
 			if (nativeHost == IntPtr.Zero)
-				throw new InvalidOperationException("Host not created");
+				throw new InvalidOperationException("Server not created. This error may be ignored if you intentionally started two servers on the same port.");
 		}
 
 		private static void ThrowIfChannelsExceeded(int channelLimit)

@@ -10,7 +10,11 @@ namespace FishNet.Component.Transforming
     public class NetworkTransform : NetworkBehaviour
     { 
         [SerializeField]
-        private bool _clientAuthoritative = true; 
+        private bool _clientAuthoritative = true;
+        [Tooltip("True to synchronize movements on server to owner when not using client authoritative movement.")]
+        [SerializeField]
+        private bool _synchrnonizeToOwner = true;
+
         private const float UPDATE_RATE = 0.02f;
         private const float INTERPOLATION = 0.025f;
 
@@ -104,7 +108,6 @@ namespace FishNet.Component.Transforming
 
             Channel channel = Channel.Unreliable;
 
-
             if (AllMatchTransform(ref _lastToClientsPosition, ref _lastToClientsRotation, ref _lastToClientsScale))
             {
                 if (_serverSentSettled)
@@ -117,7 +120,7 @@ namespace FishNet.Component.Transforming
 
             SetNextSendTime(ref _nextServerSend);
 
-            if (base.IsOwner)
+            if (base.IsOwner || !_clientAuthoritative)
                 ObserversUpdateTransform(transform.position, transform.rotation, transform.localScale, channel);
             else
                 ObserversUpdateTransform(_targetPosition, _targetRotation, _targetScale, channel);
@@ -204,7 +207,9 @@ namespace FishNet.Component.Transforming
         [ObserversRpc]
         private void ObserversUpdateTransform(Vector3 pos, Quaternion rot, Vector3 scale, Channel channel)
         {
-            if (base.IsOwner)
+            if (!_clientAuthoritative && base.IsOwner && !_synchrnonizeToOwner)
+                return;
+            if (_clientAuthoritative && base.IsOwner)
                 return;
             if (base.IsServer)
                 return;

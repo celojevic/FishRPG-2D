@@ -173,7 +173,7 @@ namespace FishNet.CodeGenerating.ILCore
 
                 bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(typeRef, true);
                 if (!canSerialize)
-                    CodegenSession.Diagnostics.AddError($"Broadcast {td.Name} does not support serialization. Use a supported type or create a custom serializer.");
+                    CodegenSession.LogError($"Broadcast {td.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 else
                     modified = true;
             }

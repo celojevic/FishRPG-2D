@@ -230,8 +230,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
   _prefabId: -1
-  _scenePathHash: 290975805
-  _sceneId: 1249731566941108043
+  _scenePathHash: 1992762357
+  _sceneId: 8558849152227796031
   SceneTransformProperties:
     Position: {x: 5, y: 3, z: 10}
     Rotation: {x: 0, y: 0, z: 0, w: 1}

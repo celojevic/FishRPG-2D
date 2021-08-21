@@ -31,7 +31,7 @@ namespace FishNet.CodeGenerating.Processing
                  * single check is performed here. */
                 if (qolType != QolAttributeType.Server && qolType != QolAttributeType.Client)
                 {
-                    CodegenSession.Diagnostics.AddError($"QolAttributeType of {qolType.ToString()} is unhandled.");
+                    CodegenSession.LogError($"QolAttributeType of {qolType.ToString()} is unhandled.");
                     continue;
                 }
 
@@ -41,7 +41,7 @@ namespace FishNet.CodeGenerating.Processing
                 //    !typeDef.InheritsNetworkBehaviour())
                 //{
                 //    string attributeShortText = (qolType == QolAttributeType.Server) ? "[Server]" : "[Client]";
-                //    CodegenSession.Diagnostics.AddWarning($"{attributeShortText} is used on {typeDef.FullName} which does not utilize NetworkBehaviour. The attribute may remain but will only be supported on NetworkBehaviour scripts until a later release.");
+                //    CodegenSession.AddWarning($"{attributeShortText} is used on {typeDef.FullName} which does not utilize NetworkBehaviour. The attribute may remain but will only be supported on NetworkBehaviour scripts until a later release.");
                 //}
                 //else
                 //{
@@ -74,19 +74,19 @@ namespace FishNet.CodeGenerating.Processing
                     //A qol attribute already exist.
                     if (foundAttribute != null)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot have multiple quality of life attributes.");
+                        CodegenSession.LogError($"{methodDef.Name} {thisQolType.ToString()} method cannot have multiple quality of life attributes.");
                         error = true;
                     }
                     ////Static method.
                     //if (methodDef.IsStatic)
                     //{
-                    //    CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
+                    //    CodegenSession.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be static.");
                     //    error = true;
                     //}
                     //Abstract method.
                     if (methodDef.IsAbstract)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} {thisQolType.ToString()} method cannot be abstract.");
+                        CodegenSession.LogError($"{methodDef.Name} {thisQolType.ToString()} method cannot be abstract.");
                         error = true;
                     }
 

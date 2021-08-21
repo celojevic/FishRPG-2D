@@ -8,7 +8,6 @@ using FishNet.Managing.Server;
 using FishNet.Managing.Timing;
 using FishNet.Managing.Transporting;
 using FishNet.Managing.Object;
-//using FishNet.Managing.Scened;
 using UnityEngine;
 using FishNet.Managing.Scened;
 using FishNet.Authenticating;
@@ -143,14 +142,12 @@ namespace FishNet.Managing
         /// <returns></returns>
         private bool WillBeDestroyed()
         {
-            return false;
             if (_allowMultiple)
                 return false;
 
             //If here multiple are not allowed.
             //If found NetworkManager isn't this copy then return false.
             bool destroyThis = (InstanceFinder.NetworkManager != this);
-            return false;
             if (destroyThis)
             {
                 Debug.Log($"NetworkManager on object {gameObject.name} is a duplicate and will be destroyed. If you wish to have multiple NetworkManagers enable 'Allow Multiple'.");

@@ -323,9 +323,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  NetworkObserver: {fileID: 0}
   _prefabId: -1
-  _scenePathHash: 1892761254
-  _sceneId: 8129347687327757352
+  _scenePathHash: 3384471982
+  _sceneId: 14536196477363104314
   SceneTransformProperties:
     Position: {x: 4.0437155, y: 6.696434, z: -6.2894096}
     Rotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}

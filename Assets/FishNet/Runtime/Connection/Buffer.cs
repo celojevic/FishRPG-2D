@@ -1,5 +1,5 @@
-﻿using System;
-using System.Buffers;
+﻿using FishNet.Utility;
+using System;
 using System.Collections.Generic;
 
 namespace FishNet.Connection
@@ -14,7 +14,7 @@ namespace FishNet.Connection
         /// <summary>
         /// All buffers written. Collection is not cleared when reset but rather the index in which to write is.
         /// </summary>
-        private List<SharedBuffer> _buffers = new List<SharedBuffer>();
+        private List<ByteBuffer> _buffers = new List<ByteBuffer>();
         /// <summary>
         /// Buffer which is being written to.
         /// </summary>
@@ -26,7 +26,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Number of buffers written to. Will return 0 if nothing has been written.
         /// </summary>
-        public int WrittenBuffers =>(_bufferIndex == 0 && _writeIndex == 0) ? 0 : (_bufferIndex + 1);
+        public int WrittenBuffers => (_bufferIndex == 0 && _writeIndex == 0) ? 0 : (_bufferIndex + 1);
         /// <summary>
         /// Number of bytes to reserve at the beginning of each buffer.
         /// </summary>
@@ -60,7 +60,7 @@ namespace FishNet.Connection
             //Make sure there is at least one buffer present.
             if (_buffers.Count == 0)
             {
-                SharedBuffer sb = new SharedBuffer(_maximumTransportUnit, _reserve);
+                ByteBuffer sb = new ByteBuffer(_maximumTransportUnit, _reserve);
                 _buffers.Add(sb);
             }
             else
@@ -105,14 +105,14 @@ namespace FishNet.Connection
                 //If need to make a new shared buffer then do so.
                 if (_buffers.Count <= _bufferIndex)
                 {
-                    _buffers.Add(new SharedBuffer(_maximumTransportUnit));
+                    _buffers.Add(new ByteBuffer(_maximumTransportUnit));
                 }
                 //Reset length on buffer being used.
                 _buffers[_buffers.Count - 1].Length = _reserve;
             }
 
             //Buffer to write into.
-            SharedBuffer buffer = _buffers[_bufferIndex];
+            ByteBuffer buffer = _buffers[_bufferIndex];
             Buffer.BlockCopy(segment.Array, segment.Offset, buffer.Data, _writeIndex, segmentCount);
             _writeIndex += segmentCount;
             buffer.Length += segmentCount;
@@ -123,7 +123,7 @@ namespace FishNet.Connection
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
-        internal SharedBuffer GetBuffer(int index)
+        internal ByteBuffer GetBuffer(int index)
         {
             if (index >= _buffers.Count || index < 0)
             {
@@ -163,24 +163,20 @@ namespace FishNet.Connection
     }
 
     /// <summary>
-    /// A buffer using a shared ArrayPool.
+    /// A byte buffer that automatically resizes.
     /// </summary>
-    internal class SharedBuffer
+    internal class ByteBuffer
     {
         /// <summary>
         /// Buffer data.
         /// </summary>
-        internal byte[] Data;
+        internal byte[] Data = null;
         /// <summary>
         /// Amount written to the buffer.
         /// </summary>
         internal int Length = 0;
-        /// <summary>
-        /// Shared ArrayPool. Made static because I'm unable to validate if instanced versions all point to the same object. Without being sure I don't want to risk creating a bunch of ArrayPool references.
-        /// </summary>
-        private static ArrayPool<byte> _shared = null;
 
-        internal SharedBuffer(int size, int reserve = 0)
+        internal ByteBuffer(int size, int reserve = 0)
         {
             Reset(size, reserve);
         }
@@ -192,27 +188,30 @@ namespace FishNet.Connection
         /// <param name="reserve"></param>
         internal void Reset(int size, int reserve = 0)
         {
-            if (_shared == null)
-                _shared = ArrayPool<byte>.Shared;
+            //Needs new array.
+            if (Data == null)
+            {
+                Data = ByteArrayPool.GetArray(size);
+            }
+            //Check if current array needs to be updated to a new size.
+            else
+            {
+                if (Data.Length < size)
+                {
+                    ByteArrayPool.StoreArray(Data);
+                    Data = ByteArrayPool.GetArray(size);
+                }
+            }
 
-            ReturnRented();
-            Data = _shared.Rent(size);
             Length = reserve;
         }
 
-        ~SharedBuffer()
+        ~ByteBuffer()
         {
-            ReturnRented();
+            if (Data != null)
+                ByteArrayPool.StoreArray(Data);
         }
 
-        /// <summary>
-        /// Returns rented data to shared.
-        /// </summary>
-        private void ReturnRented()
-        {
-            if (Data != null && _shared != null)
-                _shared.Return(Data, false);
-        }
     }
 
 

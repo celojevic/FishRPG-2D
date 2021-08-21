@@ -49,7 +49,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         {
             if (typeRef == null)
             {
-                Debug.LogError("TypeRef is null.");
+                CodegenSession.LogError("TypeRef is null.");
                 return null;
             }
 
@@ -62,7 +62,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
             finally
             {
                 if (result == null)
-                    Debug.LogError($"Unable to get Type for {typeRef.FullName}.");
+                    CodegenSession.LogWarning($"Unable to get Type for {typeRef.FullName}. If you are importing or exporting asset bundles or addressables you may ignore this warning. Additional warnings of this type for assembly {typeRef.Resolve().Module.Assembly.Name.Name} will be ignored.", true);
             }
 
             return result;
@@ -76,7 +76,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         {
             if (typeRef == null)
             {
-                Debug.LogError("TypeRef is null.");
+                CodegenSession.LogError("TypeRef is null.");
                 return null;
             }
 

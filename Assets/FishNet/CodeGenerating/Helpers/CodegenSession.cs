@@ -53,7 +53,39 @@ namespace FishNet.CodeGenerating.Helping
         [System.ThreadStatic]
         internal static NetworkBehaviourSyncProcessor NetworkBehaviourSyncProcessor;
 
+        /// <summary>
+        /// True to ignore future warnings.
+        /// </summary>
+        private static bool _ignoreNextWarning = false;
 
+        /// <summary>
+        /// Logs a warning.
+        /// </summary>
+        /// <param name="msg"></param>
+        internal static void LogWarning(string msg, bool ignoreNextWarning = false)
+        {
+            if (!_ignoreNextWarning || !ignoreNextWarning) 
+            {
+#if UNITY_2020_1_OR_NEWER
+            Diagnostics.AddWarning(msg);
+#else
+                Debug.LogWarning(msg);
+#endif
+            }
+            _ignoreNextWarning = ignoreNextWarning;
+        }
+        /// <summary>
+        /// Logs an error.
+        /// </summary>
+        /// <param name="msg"></param>
+        internal static void LogError(string msg)
+        {
+#if UNITY_2020_1_OR_NEWER
+            Diagnostics.AddWarning(msg);
+#else
+            Debug.LogError(msg);
+#endif
+        }
         /// <summary>
         /// Resets all helpers while importing any information needed by them.
         /// </summary>

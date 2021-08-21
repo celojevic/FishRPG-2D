@@ -37,7 +37,7 @@ namespace FishNet.CodeGenerating.Processing
              * user awake methods. */
             if (!CreateOrModifyAwakeMethods(firstTypeDef))
             {
-                CodegenSession.Diagnostics.AddError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
+                CodegenSession.LogError($"Was unable to make Awake methods public virtual starting on type {firstTypeDef.FullName}.");
                 return modified;
             }
             CallBaseAwakeMethods(firstTypeDef);
@@ -56,7 +56,7 @@ namespace FishNet.CodeGenerating.Processing
                     .Where(t => t.IsSubclassOf(CodegenSession.ObjectHelper.NetworkBehaviour_FullName))
                     .ToList().Count > 0)
                 {
-                    CodegenSession.Diagnostics.AddError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
+                    CodegenSession.LogError($"{copyTypeDef.FullName} contains nested NetworkBehaviours. These are not supported.");
                     return modified;
                 }
 
@@ -116,7 +116,7 @@ namespace FishNet.CodeGenerating.Processing
                     //Has RPC attribute but doesn't inherit from NB.
                     if (CodegenSession.NetworkBehaviourRpcProcessor.GetRpcAttribute(md, out _) != null)
                     {
-                        CodegenSession.Diagnostics.AddError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
+                        CodegenSession.LogError($"{typeDef.FullName} has one or more RPC attributes but does not inherit from NetworkBehaviour.");
                         error = true;
                     }
                 }
@@ -125,7 +125,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     if (CodegenSession.NetworkBehaviourSyncProcessor.GetSyncType(fd) != SyncType.Unset)
                     {
-                        CodegenSession.Diagnostics.AddError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
+                        CodegenSession.LogError($"{typeDef.FullName} has one or more SyncType attributes but does not inherit from NetworkBehaviour.");
                         error = true;
                     }
                 }
@@ -282,7 +282,7 @@ namespace FishNet.CodeGenerating.Processing
                 {
                     if (tmpMd.ReturnType != copyTypeDef.Module.TypeSystem.Void)
                     {
-                        CodegenSession.Diagnostics.AddError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
+                        CodegenSession.LogError($"IEnumerator Awake methods are not supported within NetworkBehaviours.");
                         return false;
                     }
                     tmpMd.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;

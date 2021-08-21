@@ -212,13 +212,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e4f626a9ca9704f9befe7673a8dd15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Unload: 1
-  DoIt: 0
-  MoveIdentity: 0
-  _randomObjectPrefab: {fileID: 5621897394501966668, guid: bdc4d71da2197b74eba49b3f9979de83,
-    type: 3}
   _camera: {fileID: 5090726669533971462}
   _moveRate: 4
+  _clientAuth: 1
 --- !u!54 &3514369712614123748
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -274,7 +270,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefabId: 1
+  NetworkObserver: {fileID: 0}
+  _prefabId: 7
   _scenePathHash: 0
   _sceneId: 0
   SceneTransformProperties:

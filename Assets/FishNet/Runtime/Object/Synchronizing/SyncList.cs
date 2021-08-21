@@ -118,6 +118,7 @@ namespace FishNet.Object.Synchronizing
         {
             this._comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
             this._objects = objects;
+            this._clientHostObjects = objects;
         }
 
         /// <summary>
@@ -133,10 +134,7 @@ namespace FishNet.Object.Synchronizing
              * It may not be set if results are being populated
              * in Awake. */
             if (base.NetworkBehaviour == null)
-            {
-                Debug.Log("NB null");
                 return;
-            }
 
             if (base.Settings.WritePermission == WritePermission.ServerOnly && !base.NetworkBehaviour.IsServer)
             {
@@ -294,7 +292,11 @@ namespace FishNet.Object.Synchronizing
         {
             _objects.Add(item);
             if (asServer)
+            {
+                if (NetworkBehaviour == null)
+                    _clientHostObjects.Add(item);
                 AddOperation(SyncListOperation.Add, _objects.Count - 1, default, item);
+            }
         }
         /// <summary>
         /// Adds a range of values.
@@ -317,7 +319,11 @@ namespace FishNet.Object.Synchronizing
         {
             _objects.Clear();
             if (asServer)
+            {
+                if (NetworkBehaviour == null)
+                    _clientHostObjects.Clear();
                 AddOperation(SyncListOperation.Clear, -1, default, default);
+            }
         }
 
         /// <summary>
@@ -404,7 +410,11 @@ namespace FishNet.Object.Synchronizing
         {
             _objects.Insert(index, item);
             if (asServer)
+            {
+                if (NetworkBehaviour == null)
+                    _clientHostObjects.Insert(index, item);
                 AddOperation(SyncListOperation.Insert, index, default, item);
+            }
         }
 
         /// <summary>
@@ -450,7 +460,11 @@ namespace FishNet.Object.Synchronizing
             T oldItem = _objects[index];
             _objects.RemoveAt(index);
             if (asServer)
+            {
+                if (NetworkBehaviour == null)
+                    _clientHostObjects.RemoveAt(index);
                 AddOperation(SyncListOperation.RemoveAt, index, oldItem, default);
+            }
         }
 
         /// <summary>
@@ -483,6 +497,7 @@ namespace FishNet.Object.Synchronizing
             get => _objects[i];
             set => Set(i, value, true, true);
         }
+
         /// <summary>
         /// Sets value at index.
         /// </summary>
@@ -500,7 +515,11 @@ namespace FishNet.Object.Synchronizing
                 T prev = _objects[index];
                 _objects[index] = value;
                 if (asServer)
-                    AddOperation(SyncListOperation.Set, index, prev, value);
+                {
+                    if (NetworkBehaviour == null)
+                        _clientHostObjects[index] = value;
+                        AddOperation(SyncListOperation.Set, index, prev, value);
+                }
             }
         }
         /// <summary>

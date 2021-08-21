@@ -97,7 +97,7 @@ namespace FishNet.CodeGenerating.Helping
             TypeReference dataTypeRef = readMethodRef.ReturnType;
             if (_delegatedTypes.Contains(dataTypeRef))
             {
-                CodegenSession.Diagnostics.AddError($"Generic read already created for {dataTypeRef.FullName}.");
+                CodegenSession.LogError($"Generic read already created for {dataTypeRef.FullName}.");
                 return;
             }
             else

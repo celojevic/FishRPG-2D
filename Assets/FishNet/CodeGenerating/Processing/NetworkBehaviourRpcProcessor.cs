@@ -44,7 +44,7 @@ namespace FishNet.CodeGenerating.Processing
                  * single check is performed here. */
                 if (rpcType != RpcType.Observers && rpcType != RpcType.Server && rpcType != RpcType.Target)
                 {
-                    CodegenSession.Diagnostics.AddError($"RpcType of {rpcType.ToString()} is unhandled.");
+                    CodegenSession.LogError($"RpcType of {rpcType.ToString()} is unhandled.");
                     continue;
                 }
 
@@ -103,25 +103,25 @@ namespace FishNet.CodeGenerating.Processing
                     //A rpc attribute already exist.
                     if (foundAttribute != null)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} RPC method cannot have multiple RPC attributes.");
+                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot have multiple RPC attributes.");
                         error = true;
                     }
                     //Static method.
                     if (methodDef.IsStatic)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} RPC method cannot be static.");
+                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be static.");
                         error = true;
                     }
                     //Abstract method.
                     if (methodDef.IsAbstract)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} RPC method cannot be abstract.");
+                        CodegenSession.LogError($"{methodDef.Name} RPC method cannot be abstract.");
                         error = true;
                     }
                     //Non void return.
                     if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
                     {
-                        CodegenSession.Diagnostics.AddError($"{methodDef.Name} RPC method must return void.");
+                        CodegenSession.LogError($"{methodDef.Name} RPC method must return void.");
                         error = true;
                     }
                     //TargetRpc but missing correct parameters.
@@ -129,7 +129,7 @@ namespace FishNet.CodeGenerating.Processing
                     {
                         if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
                         {
-                            CodegenSession.Diagnostics.AddError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
+                            CodegenSession.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
                             error = true;
                         }
                     }
@@ -158,7 +158,7 @@ namespace FishNet.CodeGenerating.Processing
                     bool canSerialize = CodegenSession.GeneralHelper.HasSerializerAndDeserializer(parameterDef.ParameterType, true);
                     if (!canSerialize)
                     {
-                        CodegenSession.Diagnostics.AddError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                        CodegenSession.LogError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                         error = true;
                     }
                 }
@@ -472,13 +472,13 @@ namespace FishNet.CodeGenerating.Processing
                     MethodReference baseMethod = baseType.GetMethodInBaseType(baseRemoteCallName);
                     if (baseMethod == null)
                     {
-                        CodegenSession.Diagnostics.AddError($"Could not find base method for {createdMethodDef.Name}.");
+                        CodegenSession.LogError($"Could not find base method for {createdMethodDef.Name}.");
                         return;
                     }
 
                     if (!baseMethod.Resolve().IsVirtual)
                     {
-                        CodegenSession.Diagnostics.AddError($"Could not find base method that was virtual {createdMethodDef.Name}.");
+                        CodegenSession.LogError($"Could not find base method that was virtual {createdMethodDef.Name}.");
                         return;
                     }
 
