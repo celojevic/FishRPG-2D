@@ -54,4 +54,13 @@ public class UIInventorySlot : UISlot
         UiManager.Player.Inventory.CmdUseItem(_myIndex);
     }
 
+    protected override void HandlePointerEnter()
+    {
+        if (_myIndex >= UiManager.Player?.Inventory?.Items?.Count) return;
+
+        var item = UiManager.Player?.Inventory?.Items[_myIndex]?.Item;
+        if (item != null)
+            UITooltip.Show(item.BuildString());
+    }
+
 }

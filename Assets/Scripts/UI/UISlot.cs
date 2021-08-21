@@ -98,7 +98,11 @@ public class UISlot : MonoBehaviour, IPointerClickHandler,
     {
         HandlePointerExit();
     }
-    protected virtual void HandlePointerExit() { }
+
+    /// <summary>
+    /// Hides tooltip by default.
+    /// </summary>
+    protected virtual void HandlePointerExit() => UITooltip.Hide();
 
     #endregion
 

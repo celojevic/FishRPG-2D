@@ -11,6 +11,19 @@ public class EquipmentItem : ItemBase
 
     public NetEquipment ToNetEquip() => new NetEquipment { ItemBaseGuid = base.Guid };
 
+    public override string BuildString()
+    {
+        string s = "";
+        s += $"{name}\n" +
+            //"{IMAGE}\n" +
+            $"{Description}\n";
+
+        foreach (var item in Stats)
+            s += item.BuildString();
+
+        return s;
+    }
+
     private void OnValidate()
     {
         if (Slot == EquipmentSlot.Count)
@@ -28,27 +41,4 @@ public enum EquipmentSlot : byte
 
     // keep last
     Count
-}
-
-[System.Serializable]
-public class StatValue
-{
-    public StatBase Stat;
-    public float BaseValue;
-
-    public bool RandomStats;
-    public Vector2 ValueRange;
-}
-
-[System.Serializable]
-public class RandomStat
-{
-    public StatValue Stat;
-
-    public float Value;
-
-    public RandomStat()
-    {
-        Value = Random.Range(Stat.ValueRange.x, Stat.ValueRange.y);
-    }
 }

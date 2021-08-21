@@ -11,6 +11,15 @@ public class UIEquipmentSlot : UISlot
             UiManager.Player.Equipment.CmdUnequip(_mySlot);
     }
 
+    protected override void HandlePointerEnter()
+    {
+        if (_mySlot < 0 || _mySlot >= EquipmentSlot.Count) return;
+
+        var equip = UiManager.Player?.Equipment?.Equipment[(int)_mySlot];
+        if (equip != null)
+            UITooltip.Show(equip.BuildString());
+    }
+
     private void OnValidate()
     {
         if (_mySlot == EquipmentSlot.Count)
