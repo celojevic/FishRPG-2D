@@ -51,7 +51,7 @@ public class UIInventorySlot : UISlot
         base.HandleRightClick();
         if (!HasItem()) return;
 
-        _uiInventory.UseItemInSlot(_myIndex);
+        UiManager.Player.Inventory.CmdUseItem(_myIndex);
     }
 
 }

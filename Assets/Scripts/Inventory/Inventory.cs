@@ -73,7 +73,11 @@ public class Inventory : NetworkBehaviour
     [Server]
     public bool AddItem(NetItemValue item)
     {
-        if (!TryAddItem(item)) return false;
+        if (!TryAddItem(item))
+        {
+            // TODO send msg cant add item bc full or w/e
+            return false;
+        }
 
         NetItems.Add(item);
         return true;

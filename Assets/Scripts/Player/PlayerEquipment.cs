@@ -12,6 +12,15 @@ public class PlayerEquipment : NetworkBehaviour
     public readonly SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
     public List<EquipmentItem> Equipment = new List<EquipmentItem>();
 
+    public event Action<EquipmentSlot> OnEquipmentChanged;
+
+    private Player _player;
+
+    private void Awake()
+    {
+        _player = GetComponent<Player>();
+    }
+
     private void Start()
     {
         NetEquipment.Clear();
@@ -41,9 +50,11 @@ public class PlayerEquipment : NetworkBehaviour
         switch (op)
         {
             case SyncListOperation.Set:
-                Equipment[index] = newItem.ToEquipItem();
+                Equipment[index] = newItem?.ToEquipItem();
                 break;
         }
+
+        OnEquipmentChanged?.Invoke((EquipmentSlot)index);
     }
 
     private void OnDestroy()
@@ -66,11 +77,27 @@ public class PlayerEquipment : NetworkBehaviour
         }
         else
         {
-            // TODO return item so can swap with inv
+            // TODO swap with inv
             Debug.Log("isno nol");
         }
 
         return false;
+    }
+
+    [ServerRpc]
+    public void CmdUnequip(EquipmentSlot slot)
+    {
+        // out of range
+        if (slot >= EquipmentSlot.Count) return;
+
+        // can't unequip slot with nothing in it
+        EquipmentItem equip = Equipment[(int)slot];
+        if (equip == null) return;
+
+        if (_player.Inventory.AddItem(new NetItemValue(equip)))
+        {
+            NetEquipment[(int)slot] = null;
+        }
     }
 
     #endregion

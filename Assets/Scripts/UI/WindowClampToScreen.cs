@@ -3,9 +3,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Clamps window to the screen when dragging.
-/// Requires AspectRatioFitter to respect layout group positions.
 /// </summary>
-[RequireComponent(typeof(AspectRatioFitter))]
 public class WindowClampToScreen : MonoBehaviour
 {
 
@@ -14,7 +12,6 @@ public class WindowClampToScreen : MonoBehaviour
     private void Awake()
     {
         _rectTransform = GetComponent<RectTransform>();
-        GetComponent<AspectRatioFitter>().aspectRatio = (float)Screen.width / (float)Screen.height;
     }
 
     private void Update()

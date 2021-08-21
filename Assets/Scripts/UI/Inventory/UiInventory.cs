@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class UiInventory : UiPanel
 {
 
+    [Header("UI Inventory")]
     [Tooltip("Player inv data. Should match the one in player prefab.")]
     [SerializeField] private InventoryData _invData = null;
 
@@ -87,11 +88,6 @@ public class UiInventory : UiPanel
         _slotLayoutGroup.padding = _invData.UIData.Padding;
         _slotLayoutGroup.constraint = _invData.UIData.Constraint;
         _slotLayoutGroup.constraintCount = _invData.UIData.ConstraintCount;
-    }
-
-    public void UseItemInSlot(int slotIndex)
-    {
-        UiManager.Player.Inventory.CmdUseItem(slotIndex);
     }
 
 }
