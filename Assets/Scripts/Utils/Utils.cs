@@ -1,8 +1,10 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public static class Utils
 {
 
+    public static bool IsMouseOverUI() => EventSystem.current.IsPointerOverGameObject();
 
     public static Vector3 GetWorldMousePos()
     {
@@ -10,6 +12,7 @@ public static class Utils
         mousePos.z = 0f;
         return mousePos;
     }
+
 
 
 }

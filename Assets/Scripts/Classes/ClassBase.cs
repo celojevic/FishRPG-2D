@@ -8,6 +8,7 @@ public class ClassBase : ScriptableObject
     [Tooltip("Allows for a class to look different based on gender or anything else.")]
     public Appearance[] Appearances;
     public ItemBase[] StartingItems;
+    public SpellBase[] StartingSpells;
 
     // regen %
     // spawn scene/pos
@@ -19,7 +20,6 @@ public class ClassBase : ScriptableObject
     // scaling stat and %
     // base stats/ points
     // base attack speed
-    // base spells
 
     // LEVEL UP
     //stats/points increase per level, flat or %

@@ -27,3 +27,5 @@ MonoBehaviour:
     DialogueSprite: {fileID: 21300000, guid: 2af9d179052eb1147b04b971f4bd8b1b, type: 3}
   StartingItems:
   - {fileID: 11400000, guid: 6fa38875fd8735347bd2afaf6c2f3f9b, type: 2}
+  StartingSpells:
+  - {fileID: 11400000, guid: 2d862d8c38c6d134aa05897d9514e184, type: 2}

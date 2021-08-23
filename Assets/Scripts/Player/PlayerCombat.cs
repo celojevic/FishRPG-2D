@@ -1,19 +1,19 @@
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 
 public class PlayerCombat : NetworkBehaviour
 {
 
     [Header("Basic Attack")]
-    [SerializeField] private GameObject _basicSwingPrefab = null;
-    [SerializeField] private GameObject _basicImpactPrefab = null;
-    [SerializeField] private float _aoeRadius = 0.5f;
-    [SerializeField] private float _range = 1f;
-    [SerializeField] private int _baseDmg = 10;
+    [SerializeField] private DamageSpell _basicMeleeAttack = null;
 
+    [SyncVar] private float _attackTimer;
     private Player _player;
-    private float _attackTimer;
     private Vector2 _attackDir;
+
+    // TODO make this based on stats
+    [SerializeField] private float _attackDelay = 0.5f;
 
     private void Awake()
     {
@@ -23,8 +23,10 @@ public class PlayerCombat : NetworkBehaviour
     private void Update()
     {
         if (!base.IsOwner) return;
+        if (Utils.IsMouseOverUI()) return;
+        if (Time.time < _attackTimer) return;
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButton(0))
         {
             _attackDir = (Utils.GetWorldMousePos() - transform.position).normalized;
             CmdBasicAttack(_attackDir);
@@ -34,12 +36,16 @@ public class PlayerCombat : NetworkBehaviour
     [ServerRpc]
     void CmdBasicAttack(Vector2 dir)
     {
+        if (Time.time < _attackTimer) return;
+        ResetAttackTimer();
+
         dir.Normalize();
         SpawnSwingAnimation(_player.GetCenter(), dir);
 
-        // TODO this is only if skill animation doesnt have collider
-        var hits = Physics2D.OverlapCircleAll(_player.GetCenter() + dir * _range, _aoeRadius, 
-            LayerMask.GetMask("Enemy"));
+        // TODO this is only if skill animation doesnt have collider, make separate script for
+        //      anim colliders when they (ontriggerenter)
+        var hits = Physics2D.OverlapCircleAll(_player.GetCenter() + dir * _basicMeleeAttack.Range,
+            _basicMeleeAttack.AoeRadius, LayerMask.GetMask("Enemy"));
         if (hits.IsValid())
         {
             foreach (var item in hits)
@@ -48,36 +54,31 @@ public class PlayerCombat : NetworkBehaviour
                 {
                     Health h = item.GetComponent<Health>();
                     if (h)
-                        h.Subtract(_baseDmg);
+                        h.Subtract(_basicMeleeAttack.BaseDamage);
                     SpawnImpactAnim(item.transform.position);
                 }
             }
         }
     }
 
+    private void ResetAttackTimer() => _attackTimer = Time.time + _attackDelay;
+
     [ObserversRpc]
     void SpawnImpactAnim(Vector2 pos)
     {
-        if (_basicImpactPrefab)
-            Instantiate(_basicImpactPrefab, pos, Quaternion.identity);
+        if (_basicMeleeAttack.OnHitAnimPrefab)
+            Instantiate(_basicMeleeAttack.OnHitAnimPrefab, pos, Quaternion.identity);
     }
 
     [ObserversRpc]
     void SpawnSwingAnimation(Vector2 pos, Vector2 dir)
     {
-        if (_basicSwingPrefab)
+        if (_basicMeleeAttack.CastAnimPrefab)
         {
-            Instantiate(_basicSwingPrefab, pos, 
+            Instantiate(_basicMeleeAttack.CastAnimPrefab, pos, 
                 Quaternion.AngleAxis(Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg, Vector3.forward)
             );
         }
-    }
-
-    private void OnDrawGizmos()
-    {
-        //Gizmos.color = Color.red;
-        //Gizmos.DrawRay(_player.GetCenter(), _attackDir);
-        //Gizmos.DrawWireSphere(_player.GetCenter() + _attackDir.normalized * _range, _aoeRadius);
     }
 
 }

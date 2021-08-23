@@ -340,8 +340,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Class: {fileID: 11400000, guid: 50108271fe796b947864b10075fd2136, type: 2}
-  Combat: {fileID: 0}
-  Equipment: {fileID: 0}
+  Combat: {fileID: 7122920321038994759}
+  Equipment: {fileID: 6177808279878682317}
   Input: {fileID: 4576581613593028736}
   Inventory: {fileID: 6787471158684533656}
   Movement: {fileID: 4576581613593028743}
@@ -359,8 +359,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51c4fa4eaa986444eb4716fb6990b362, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _basicMeleeAttack: {fileID: 11400000, guid: 2d862d8c38c6d134aa05897d9514e184, type: 2}
   _basicSwingPrefab: {fileID: 4816067200018050144, guid: 39bb0c8eb0833144f9f86f69b40863ff, type: 3}
   _basicImpactPrefab: {fileID: 3438962489464447955, guid: f04256fc42783a54e8ace996b90eb3df, type: 3}
+  _aoeRadius: 0.5
+  _range: 1
+  _baseDmg: 10
+  _attackDelay: 0.5
 --- !u!114 &6177808279878682317
 MonoBehaviour:
   m_ObjectHideFlags: 0

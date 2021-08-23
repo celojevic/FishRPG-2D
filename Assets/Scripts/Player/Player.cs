@@ -1,7 +1,7 @@
 using FishNet.Object;
 using UnityEngine;
 
-public class Player : NetworkBehaviour
+public class Player : Entity
 {
 
     [Header("Data")]

@@ -1,7 +1,7 @@
 using FishNet.Object;
 using UnityEngine;
 
-public class Enemy : NetworkBehaviour
+public class Enemy : Entity
 {
 
 
