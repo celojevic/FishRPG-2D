@@ -22,16 +22,13 @@ namespace FishNet.CodeGenerating.Processing
         /// Objects created during this process. Used primarily to skip changing references within objects.
         /// </summary>
         private List<object> _createdSyncTypeMethodDefinitions = new List<object>();
-
-        private FieldReference _syncVarCollection = null;
-        private FieldReference _syncObjectCollection = null;
         #endregion
 
         #region Const.
         private const string SYNCHANDLER_PREFIX = "syncHandler_";
         private const string ACCESSOR_PREFIX = "sync___";
-        private const string SETSYNCINDEX_METHOD_NAME = "SetSyncIndexInternal";
-        private const string SYNCOBJECT_INITIALIZEINSTANCE_METHOD_NAME = "InitializeSyncObjectInstanceInternal";
+        private const string SETSYNCINDEX_METHOD_NAME = "SetSyncIndex";
+        private const string INITIALIZEINSTANCE_METHOD_NAME = "InitializeInstance";
         #endregion
 
         /// <summary>
@@ -45,8 +42,6 @@ namespace FishNet.CodeGenerating.Processing
 
             _createdSyncTypeMethodDefinitions.Clear();
             _lastReadInstruction = null;
-            _syncVarCollection = null;
-            _syncObjectCollection = null;
 
             /* Use a for loop because fields are added as they're processed.
              * A foreach would through collection modified error. */
@@ -593,7 +588,7 @@ namespace FishNet.CodeGenerating.Processing
             injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
              processor= injectionMethodDef.Body.GetILProcessor();
             //
-            System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod("InitializeInstanceInternal");
+            System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod(INITIALIZEINSTANCE_METHOD_NAME);
             MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
@@ -663,7 +658,7 @@ namespace FishNet.CodeGenerating.Processing
             MethodReference setSyncIndexMethodRef = CodegenSession.Module.ImportReference(setSyncIndexMethodInfo);
 
             /* Initialize with attribute settings. */
-            System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod("InitializeInstanceInternal");
+            System.Reflection.MethodInfo initializeInstanceMethodInfo = typedSyncClassType.GetMethod(INITIALIZEINSTANCE_METHOD_NAME);
             MethodReference initializeInstanceMethodRef = CodegenSession.Module.ImportReference(initializeInstanceMethodInfo);
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //this.
             instructions.Add(processor.Create(OpCodes.Ldfld, originalFieldDef));
@@ -960,10 +955,10 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor;
 
             //Get the read sync method, or create it if not present.
-            MethodDefinition readSyncMethodDef = typeDef.GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVarInternal_MethodRef.Name);
+            MethodDefinition readSyncMethodDef = typeDef.GetMethod(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name);
             if (readSyncMethodDef == null)
             {
-                readSyncMethodDef = new MethodDefinition(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVarInternal_MethodRef.Name,
+                readSyncMethodDef = new MethodDefinition(CodegenSession.ObjectHelper.NetworkBehaviour_ReadSyncVar_MethodRef.Name,
                 (MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.Virtual),
                     typeDef.Module.TypeSystem.Void);
 

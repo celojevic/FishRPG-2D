@@ -38,8 +38,8 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference NetworkBehaviour_CompareOwner_MethodRef;
         private MethodReference NetworkBehaviour_OwnerIsValid_MethodRef;
         internal MethodReference NetworkBehaviour_Owner_MethodRef;
-        internal MethodReference NetworkBehaviour_ReadSyncVarInternal_MethodRef;
-        internal MethodReference NetworkBehaviour_UsingOnStartServer_MethodRef;
+        internal MethodReference NetworkBehaviour_ReadSyncVar_MethodRef;
+        internal MethodReference NetworkBehaviour_UsingOnStartServerInternal_MethodRef;
         internal MethodReference NetworkBehaviour_UsingOnStopServerInternal_MethodRef;
         internal MethodReference NetworkBehaviour_UsingOnOwnershipServerInternal_MethodRef;
         internal MethodReference NetworkBehaviour_UsingOnSpawnServerInternal_MethodRef;
@@ -83,7 +83,7 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             //InstanceFinder methods.
-            Type instanceFinderType = typeof(InstanceFinder); 
+            Type instanceFinderType = typeof(InstanceFinder);
             foreach (PropertyInfo pi in instanceFinderType.GetProperties())
             {
                 if (pi.Name == nameof(InstanceFinder.IsClient))
@@ -99,11 +99,11 @@ namespace FishNet.CodeGenerating.Helping
             foreach (MethodInfo methodInfo in networkBehaviourType.GetMethods((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
             {
                 //CreateDelegates.
-                if (methodInfo.Name == nameof(NetworkBehaviour.CreateServerRpcDelegateInternal))
+                if (methodInfo.Name == nameof(NetworkBehaviour.CreateServerRpcDelegate))
                     NetworkBehaviour_CreateServerRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateObserversRpcDelegateInternal))
+                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateObserversRpcDelegate))
                     NetworkBehaviour_CreateObserversRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateTargetRpcDelegateInternal))
+                else if (methodInfo.Name == nameof(NetworkBehaviour.CreateTargetRpcDelegate))
                     NetworkBehaviour_CreateTargetRpcDelegate_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 //SendRpcs.
                 else if (methodInfo.Name == nameof(NetworkBehaviour.SendServerRpc))
@@ -113,40 +113,33 @@ namespace FishNet.CodeGenerating.Helping
                 else if (methodInfo.Name == nameof(NetworkBehaviour.SendTargetRpc))
                     NetworkBehaviour_SendTargetRpc_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 //NetworkObject/NetworkBehaviour Callbacks.
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONSTARTSERVER_INTERNAL_NAME)
-                    NetworkBehaviour_UsingOnStartServer_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONSTOPSERVER_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStartServerInternal))
+                    NetworkBehaviour_UsingOnStartServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStopServerInternal))
                     NetworkBehaviour_UsingOnStopServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONOWNERSHIPSERVER_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnOwnershipServerInternal))
                     NetworkBehaviour_UsingOnOwnershipServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONSPAWNSERVER_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnSpawnServerInternal))
                     NetworkBehaviour_UsingOnSpawnServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONDESPAWNSERVER_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnDespawnServerInternal))
                     NetworkBehaviour_UsingOnDespawnServerInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONSTARTCLIENT_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStartClientInternal))
                     NetworkBehaviour_UsingOnStartClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONSTOPCLIENT_INTERNAL_NAME)
-                    NetworkBehaviour_UsingOnStopClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-
-                else if (methodInfo.Name == NetworkBehaviourCallbackProcessor.USING_ONOWNERSHIPCLIENT_INTERNAL_NAME)
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnStopClientInternal))
+                    NetworkBehaviour_UsingOnStopClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo); 
+                else if (methodInfo.Name == nameof(NetworkBehaviour.UsingOnOwnershipClientInternal))
                     NetworkBehaviour_UsingOnOwnershipClientInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
                 //Misc.
                 else if (methodInfo.Name == nameof(NetworkBehaviour.CompareOwner))
                     NetworkBehaviour_CompareOwner_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.ReadSyncVarInternal))
-                    NetworkBehaviour_ReadSyncVarInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
-                else if (methodInfo.Name == nameof(NetworkBehaviour.SetRpcMethodCountInternal))
+                else if (methodInfo.Name == nameof(NetworkBehaviour.ReadSyncVar))
+                    NetworkBehaviour_ReadSyncVar_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(NetworkBehaviour.SetRpcMethodCount))
                     NetworkBehaviour_SetRpcMethodCountInternal_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             foreach (PropertyInfo propertyInfo in networkBehaviourType.GetProperties())
-            {
+            { 
                 //Server/Client states.
                 if (propertyInfo.Name == nameof(NetworkBehaviour.IsClient))
                     NetworkBehaviour_IsClient_MethodRef = CodegenSession.Module.ImportReference(propertyInfo.GetMethod);
@@ -277,9 +270,9 @@ namespace FishNet.CodeGenerating.Helping
         /// Creates exit method condition if local client is not owner.
         /// </summary>
         /// <param name="processor"></param>
-        /// <param name="asServer"></param>
-        /// <param name="warn"></param>
-        internal void CreateLocalClientIsOwnerCheck(ILProcessor processor, LoggingType loggingType, bool insertFirst)
+        /// <param name="retIfOwner">True if to ret when not owner. False to ret if owner.</param>
+        /// <returns>Returns Ret instruction.</returns>
+        internal Instruction CreateLocalClientIsOwnerCheck(ILProcessor processor, LoggingType loggingType, bool retIfOwner, bool insertFirst)
         {
             List<Instruction> instructions = new List<Instruction>();
             /* This is placed after the if check.
@@ -290,12 +283,25 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Ldarg_0)); //argument: this
             //If !base.IsOwner endIf.
             instructions.Add(processor.Create(OpCodes.Call, NetworkBehaviour_IsOwner_MethodRef));
-            instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
+            if (!retIfOwner)
+                instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
+            else
+                instructions.Add(processor.Create(OpCodes.Brfalse, endIf));
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
-                instructions.AddRange(CodegenSession.GeneralHelper.CreateDebugWarningInstructions(processor, "Cannot complete action because you are not the owner of this object."));
+            {
+                string msg = (retIfOwner) ?
+                    "Cannot complete action because you are the owner of this object." :
+                    "Cannot complete action because you are not the owner of this object.";
+
+                if (loggingType == LoggingType.Warn)
+                    instructions.AddRange(CodegenSession.GeneralHelper.CreateDebugWarningInstructions(processor, msg));
+                else
+                    instructions.AddRange(CodegenSession.GeneralHelper.CreateDebugErrorInstructions(processor, msg));
+            }
             //Return block.
-            instructions.Add(processor.Create(OpCodes.Ret));
+            Instruction retInst = processor.Create(OpCodes.Ret);
+            instructions.Add(retInst);
             //After if statement, jumped to when successful check.
             instructions.Add(endIf);
 
@@ -308,13 +314,15 @@ namespace FishNet.CodeGenerating.Helping
                 foreach (Instruction inst in instructions)
                     processor.Append(inst);
             }
+
+            return retInst;
         }
 
         /// <summary>
         /// Creates exit method condition if remote client is not owner.
         /// </summary>
         /// <param name="processor"></param>
-        internal void CreateRemoteClientIsOwnerCheck(ILProcessor processor, ParameterDefinition connectionParameterDef)
+        internal Instruction CreateRemoteClientIsOwnerCheck(ILProcessor processor, ParameterDefinition connectionParameterDef)
         {
             /* This is placed after the if check.
              * Should the if check pass then code
@@ -327,10 +335,13 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Call, NetworkBehaviour_CompareOwner_MethodRef);
             processor.Emit(OpCodes.Brtrue, endIf);
             //Return block.
-            processor.Emit(OpCodes.Ret);
+            Instruction retInst = processor.Create(OpCodes.Ret);
+            processor.Append(retInst);
 
             //After if statement, jumped to when successful check.
             processor.Append(endIf);
+
+            return retInst;
         }
 
         /// <summary>
@@ -359,7 +370,7 @@ namespace FishNet.CodeGenerating.Helping
             {
                 instructions.Add(processor.Create(OpCodes.Call, InstanceFinder_IsClient_MethodRef));
             }
-            instructions.Add(processor.Create(OpCodes.Brtrue, endIf)); 
+            instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
             //If warning then also append warning text.
             if (loggingType != LoggingType.Off)
                 instructions.AddRange(

@@ -47,6 +47,29 @@ namespace FishNet.CodeGenerating.Helping.Extension
         }
 
         /// <summary>
+        /// Inserts instructions before target.
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="instructions"></param>
+        public static void InsertBefore(this ILProcessor processor,Instruction target, List<Instruction> instructions)
+        {
+            int index = processor.Body.instructions.IndexOf(target);
+            for (int i = 0; i < instructions.Count; i++)
+                processor.Body.Instructions.Insert(index + i, instructions[i]);
+        }
+
+        /// <summary>
+        /// Adds instructions to the end of processor.
+        /// </summary>
+        /// <param name="processor"></param>
+        /// <param name="instructions"></param>
+        public static void Add(this ILProcessor processor, List<Instruction> instructions)
+        {
+            for (int i = 0; i < instructions.Count; i++)
+                processor.Body.Instructions.Add(instructions[i]);
+        }
+
+        /// <summary>
         /// Inserts instructions before returns. Only works on void types.
         /// </summary>
         /// <param name="processor"></param>

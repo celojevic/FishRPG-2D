@@ -360,11 +360,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _basicMeleeAttack: {fileID: 11400000, guid: 2d862d8c38c6d134aa05897d9514e184, type: 2}
-  _basicSwingPrefab: {fileID: 4816067200018050144, guid: 39bb0c8eb0833144f9f86f69b40863ff, type: 3}
-  _basicImpactPrefab: {fileID: 3438962489464447955, guid: f04256fc42783a54e8ace996b90eb3df, type: 3}
-  _aoeRadius: 0.5
-  _range: 1
-  _baseDmg: 10
   _attackDelay: 0.5
 --- !u!114 &6177808279878682317
 MonoBehaviour:
@@ -566,7 +561,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _clientAuthoritative: 1
-  _synchrnonizeToOwner: 1
+  _synchronizeToOwner: 1
 --- !u!114 &4576581613593028741
 MonoBehaviour:
   m_ObjectHideFlags: 0

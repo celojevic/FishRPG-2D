@@ -11,18 +11,6 @@ namespace FishNet.CodeGenerating.Processing
 {
     internal class NetworkBehaviourCallbackProcessor
     {
-
-        #region Const.
-        internal const string USING_ONSTARTSERVER_INTERNAL_NAME = "UsingOnStartServerInternal";
-        internal const string USING_ONSTOPSERVER_INTERNAL_NAME = "UsingOnStopServerInternal";
-        internal const string USING_ONOWNERSHIPSERVER_INTERNAL_NAME = "UsingOnOwnershipServerInternal";
-        internal const string USING_ONSPAWNSERVER_INTERNAL_NAME = "UsingOnSpawnServerInternal";
-        internal const string USING_ONDESPAWNSERVER_INTERNAL_NAME = "UsingOnDespawnServerInternal";
-        internal const string USING_ONSTARTCLIENT_INTERNAL_NAME = "UsingOnStartClientInternal";
-        internal const string USING_ONSTOPCLIENT_INTERNAL_NAME = "UsingOnStopClientInternal";
-        internal const string USING_ONOWNERSHIPCLIENT_INTERNAL_NAME = "UsingOnOwnershipClientInternal";
-        #endregion
-
         internal bool Process(TypeDefinition firstTypeDef, TypeDefinition typeDef, HashSet<string> allProcessedCallbacks)
         {
             bool modified = false;
@@ -62,7 +50,7 @@ namespace FishNet.CodeGenerating.Processing
                 if (methodInfo.Name == nameof(NetworkBehaviour.OnStartServer))
                 {
                     instructions.Add(processor.Create(OpCodes.Ldarg_0));//this.
-                    instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_UsingOnStartServer_MethodRef));
+                    instructions.Add(processor.Create(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_UsingOnStartServerInternal_MethodRef));
                 }
                 //OnStopServer.
                 else if (methodInfo.Name == nameof(NetworkBehaviour.OnStopServer))

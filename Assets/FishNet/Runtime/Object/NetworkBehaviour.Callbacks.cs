@@ -52,58 +52,58 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server after initializing this object.
         /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
-        /// </summary>
+        /// </summary> 
         public virtual void OnStartServer() { }
         private void NetworkObject_OnStartServer() { OnStartServer(); }
-        protected void UsingOnStartServerInternal() { _usingOnStartServer = true; }
+        protected internal void UsingOnStartServerInternal() { _usingOnStartServer = true; }
         /// <summary>
         /// Called on the server before deinitializing this object.
         /// </summary>
         public virtual void OnStopServer() { }
         private void NetworkObject_OnStopServer() { OnStopServer(); }
-        protected void UsingOnStopServerInternal() { _usingOnStopServer = true; }
+        protected internal void UsingOnStopServerInternal() { _usingOnStopServer = true; }
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
         /// <param name="currentOwner">Current owner of this object.</param>
         public virtual void OnOwnershipServer(NetworkConnection currentOwner) { }
         private void NetworkObject_OnOwnershipServer(NetworkConnection currentOwner) { OnOwnershipServer(currentOwner); }
-        protected void UsingOnOwnershipServerInternal() { _usingOnOwnershipServer = true; }
+        protected internal void UsingOnOwnershipServerInternal() { _usingOnOwnershipServer = true; }
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
         /// Useful for sending remote calls or actions to clients .
         /// </summary>
         public virtual void OnSpawnServer(NetworkConnection connection) { }
         private void NetworkObject_OnSpawnServer(NetworkConnection connection) { OnSpawnServer(connection); }
-        protected void UsingOnSpawnServerInternal() { _usingOnSpawnServer = true; }
+        protected internal void UsingOnSpawnServerInternal() { _usingOnSpawnServer = true; }
         /// <summary>
         /// Called on the server before a despawn message for this object has been sent to clients.
         /// Useful for sending remote calls or actions to clients.
         /// </summary>
         public virtual void OnDespawnServer(NetworkConnection connection) { }
         private void NetworkObject_OnDespawnServer(NetworkConnection connection) { OnDespawnServer(connection); }
-        protected void UsingOnDespawnServerInternal() { _usingOnDespawnServer = true; }
+        protected internal void UsingOnDespawnServerInternal() { _usingOnDespawnServer = true; }
         /// <summary>
         /// Called on the client after initializing this object.
         /// </summary>
         /// <param name="isOwner">True if the owner of this object.</param>
         public virtual void OnStartClient(bool isOwner) { }
         private void NetworkObject_OnStartClient(bool isOwner) { OnStartClient(isOwner); }
-        protected void UsingOnStartClientInternal() { _usingOnStartClient = true; }
+        protected internal void UsingOnStartClientInternal() { _usingOnStartClient = true; }
         /// <summary>
         /// Called on the client before deinitializing this object.
         /// </summary>
         /// <param name="isOwner">True if the owner of this object.</param>
         public virtual void OnStopClient(bool isOwner) { }
         private void NetworkObject_OnStopClient(bool isOwner) { OnStopClient(isOwner); }
-        protected void UsingOnStopClientInternal() { _usingOnStopClient = true; }
+        protected internal void UsingOnStopClientInternal() { _usingOnStopClient = true; }
         /// <summary>
         /// Called on the client after gaining or losing ownership.
         /// </summary>
         /// <param name="newOwner">Current owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection newOwner) { }
         private void NetworkObject_OnOwnershipClient(NetworkConnection newOwner) { OnOwnershipClient(newOwner); }
-        protected void UsingOnOwnershipClientInternal() { _usingOnOwnershipClient = true; }
+        protected internal void UsingOnOwnershipClientInternal() { _usingOnOwnershipClient = true; }
 
 
         /// <summary>

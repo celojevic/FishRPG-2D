@@ -63,7 +63,7 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (MethodInfo methodInfo in syncBaseType.GetMethods())
             {
-                if (methodInfo.Name == nameof(SyncBase.SetSyncIndexInternal))
+                if (methodInfo.Name == nameof(SyncBase.SetSyncIndex))
                     SyncBase_SetSyncIndex_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
@@ -142,7 +142,7 @@ namespace FishNet.CodeGenerating.Helping
                         baseWriteMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.Dirty))
                         baseDirtyMethodRef = CodegenSession.Module.ImportReference(methodDef);
-                    else if (methodDef.Name == nameof(SyncBase.InitializeInstanceInternal))
+                    else if (methodDef.Name == nameof(SyncBase.InitializeInstance))
                         baseInitializeInstanceInternalMethodRef = CodegenSession.Module.ImportReference(methodDef);
 
                 }

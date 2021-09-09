@@ -8,8 +8,8 @@ using UnityEngine;
 public class PlayerEquipment : NetworkBehaviour
 {
 
-    [EnumNameArray(typeof(EquipmentSlot))]
     public readonly SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
+    [EnumNameArray(typeof(EquipmentSlot))]
     public List<EquipmentItem> Equipment = new List<EquipmentItem>();
 
     public event Action<EquipmentSlot> OnEquipmentChanged;
@@ -19,10 +19,7 @@ public class PlayerEquipment : NetworkBehaviour
     private void Awake()
     {
         _player = GetComponent<Player>();
-    }
 
-    private void Start()
-    {
         NetEquipment.Clear();
         for (EquipmentSlot i = 0; i < EquipmentSlot.Count; i++)
             NetEquipment.Add(null);

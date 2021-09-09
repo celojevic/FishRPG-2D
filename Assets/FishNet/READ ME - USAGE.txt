@@ -1,7 +1,3 @@
-For the latest version of this file please view it on Discord.
-
-
-Thank you again so much for being a tester. I cannot stress how much you are helping this project succeed simply by giving it a chance.
 
 This read me is going to be a bit rough. I don't want to delay the testing anymore than we have to, and much of this may change, therefor I'm not going to prettify it for now.
 Keep in mind some components are testing placeholders. If you find a component that looks awful and has no commenting, you definitely found one. These will be replaced on release. For anything else please use #fishnet-bugs and #discussion, #content-suggestions, ect.
@@ -9,15 +5,14 @@ I'll be making examples progressively, both for testing and release. They can be
 
 I've added a variety of debug messages for now to indicate certain events since there isn't a graphical representation for everything yet.
 
-To get started on any gameObject add the following components:
-- NetworkManager, TransportManager, Fluidity.
-You can also add the NetworkHudCanvas to quickly have access to managing server and client connections. Don't forget the event system if it's not present.
+To get started make your scene and add the prefabs NetworkManager, and NetworkHudCanvas. These are founder under the Example/Prefabs folder.
 
 I've included three components to get started:
 - NetworkTransform (drafted), NetworkAnimator (complete), and PlayerSpawner (drafted).
 Clients are not bound to their objects like in Mirror; clients may be connected without requiring a player object. The PlayerSpawner demonstrates how to spawn objects for clients. Make sure any objects you want to spawn are under 'Spawnable Objects' in the NetworkManager component; I'd like to make this automatic in the future.
 
-There is currently a singleton reference to NetworkManager if you need to access any functionality such as 'NetworkManager.Instance.Server.Objects.Spawn'. Needless to say this is a bit wordy and I will be changing it in the future; ideas appreciated.
+There are no singletons in FishNet, eg: NetworkServer.Instance does not exist. If you would like to access the NetworkManager, ServerManager, ect...
+call InstanceFinder.TypeHere.
 
 Most functionality is the same, perhaps worded slightly different, as other solutions. There are the following RPCs and they use your standard [TypeAttribute].
 - TargetRpc Method(NetworkConnection target, YourData data); //Send to a single connection.
@@ -64,8 +59,7 @@ void MyHook(SupportedType prev, SupportedType next, bool asServer);
 The variable names may be whatever you like. AsServer is true if the hook is being called for the server, false if client.
 Note: Unreliable SyncVars do not yet have eventual consistency but they will by release.
 
-
-SyncList are also an option; other sync objects will be coming soon. SyncList timings and options are currently reliable @ 100ms, but they will be configurable soon.
+There are also SyncList and SyncDictionary.
 Like Mirror, SyncList are:
 private SyncList<SupportedType> _mySyncList = new SyncList<SupportedType>();
 Then you treat the synclist as a normal list. You can also subscribe to callbacks using...
@@ -74,7 +68,7 @@ _mySyncList.OnChange += Method... EG: a Vector2 synclist would look like this.
 void _mySyncList_OnChange(SyncListOperation op, int index, Vector2 oldItem, Vector2 newItem, bool asServer);
 
 
-NetworkObject is the new NetworkObject. All properties exposed outside the class use CamelCase, eg: base.IsServer rather than base.isServer. Authority is renamed to Owner, eg: base.IsOwner. There are also OwnerIsValid, OwnerId, IsHost, IsServerOnly, and many more. You can also compare connection Ids on clients (this is an optional feature). EG you can see if playerA owns objectC from playerB.
+NetworkObject is the new NetworkIdentity. All properties exposed outside the class use CamelCase, eg: base.IsServer rather than base.isServer. Authority is renamed to Owner, eg: base.IsOwner. There are also OwnerIsValid, OwnerId, IsHost, IsServerOnly, and many more. You can also compare connection Ids on clients (this is an optional feature). EG you can see if playerA owns objectC from playerB.
 
 
 There are a ton of callback options for NetworkBehaviour. See NetworkBehaviour.Callbacks file for all of them.
@@ -89,15 +83,18 @@ public struct MyBroadcast : IBroadcast
 {
     public byte Count;
 }
- 
+
+You can call a broadcast on the ServerManager, ClientManager, or on a NetworkObject (nob.Broadcast).
 
 FishNet also has a multiple condition system for observers. You can add a NetworkObserver component to a NetworkObject to support observer conditions. Within the NetworkObserver component you will add your ObserverConditions. ObserverConditions are scriptable objects, and you can make your own. To make your own inherit from the ObserverCondition class. To see examples you can view any of the two included conditions:
 - SceneCondition, DistanceCondition.
-You can use this as well by right clicking in your project folder and using Create -> FishNet -> Observers.
+You can make your own as well by right clicking in your project folder and using Create -> FishNet -> Observers.
 ScriptableObjects were chosen because it allows you to easily mass modify conditions without having to track down all your objects.
 
 
 If you are interested in taking advantage of the tick based design you can use the events within TimeManager (NetworkManager.TimeManager). There are several, and they are all commented. EG: OnTick<int>. Tick timing is not fully implemented yet but if you wish to get started you can use those events and they will work.
 
+There's still a lot planned and a lot done that isn't discussed in this read me. Check out the trello for a complete list. https://trello.com/b/taAfXWKP/fishnet-fish-networking
+If you would like a feature and it's not on the trello please use the content-suggestions channel.
 
-I'm sure I missed a lot, and there are still many features and optimizations planned ahead. If you have any questions, ideas, bug finds or potential bug finds, please hit me with them!
+Note: not all SceneManager examples are complete. Some need to have the NetworkManager removed and replaced with the prefab version.

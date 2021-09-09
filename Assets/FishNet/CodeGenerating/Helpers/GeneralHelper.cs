@@ -16,6 +16,7 @@ namespace FishNet.CodeGenerating.Helping
     {
         #region Reflection references.
         internal MethodReference Debug_LogWarning_MethodRef;
+        internal MethodReference Debug_LogError_MethodRef;
         private MethodReference EqualityComparer_Default_MethodRef;
         internal MethodReference IsServer_MethodRef = null;
         internal MethodReference IsClient_MethodRef = null;
@@ -40,6 +41,8 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (methodInfo.Name == nameof(Debug.LogWarning) && methodInfo.GetParameters().Length == 1)
                     Debug_LogWarning_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
+                else if (methodInfo.Name == nameof(Debug.LogError) && methodInfo.GetParameters().Length == 1)
+                    Debug_LogError_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
             Type codegenHelper = typeof(CodegenHelper);
@@ -69,7 +72,12 @@ namespace FishNet.CodeGenerating.Helping
                 foreach (CustomAttribute item in typeDef.CustomAttributes)
                 {
                     if (item.AttributeType.FullName == typeof(CodegenIncludeInternalAttribute).FullName)
-                        return false;
+                    {
+                        if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length > 0)
+                            return !typeDef.FullName.Contains(FishNetILPP.CODEGEN_THIS_NAMESPACE);
+                        else
+                            return false;
+                    }
                 }
 
                 return true;
@@ -77,6 +85,9 @@ namespace FishNet.CodeGenerating.Helping
             //Not FishNet assembly.
             else
             {
+                if (FishNetILPP.CODEGEN_THIS_NAMESPACE.Length > 0)
+                    return true;
+
                 foreach (CustomAttribute item in typeDef.CustomAttributes)
                 {
                     if (item.AttributeType.FullName == typeof(CodegenExcludeAttribute).FullName)
@@ -333,6 +344,28 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ret);
         }
 
+
+        /// <summary>
+        /// Creates a debug error appends the instructions.
+        /// </summary>
+        /// <param name="processor"></param>
+        internal void CreateDebugError(ILProcessor processor, string message)
+        {
+            processor.Emit(OpCodes.Ldstr, message);
+            processor.Emit(OpCodes.Call, Debug_LogError_MethodRef);
+        }
+        /// <summary>
+        /// Creates a debug error and returns the starting instruction.
+        /// </summary>
+        /// <param name="processor"></param>
+        internal List<Instruction> CreateDebugErrorInstructions(ILProcessor processor, string message)
+        {
+            List<Instruction> instructions = new List<Instruction>();
+            instructions.Add(processor.Create(OpCodes.Ldstr, message));
+            instructions.Add(processor.Create(OpCodes.Call, Debug_LogError_MethodRef));
+            return instructions;
+        }
+
         /// <summary>
         /// Creates a debug warning and returns the starting instruction.
         /// </summary>
@@ -344,21 +377,6 @@ namespace FishNet.CodeGenerating.Helping
             instructions.Add(processor.Create(OpCodes.Call, Debug_LogWarning_MethodRef));
             return instructions;
         }
-
-        ///// <summary>
-        ///// Creates a debug warning appends the instructions.
-        ///// </summary>
-        ///// <param name="processor"></param>
-        //internal void CreateDebugWarning(ILProcessor processor, FieldDefinition fieldDef)
-        //{
-        //    processor.Emit(OpCodes.Ldfld, fieldDef); 
-        //    TypeDefinition td = fieldDef.FieldType.Resolve();
-        //    CodegenSession.Module.ImportReference(td);
-        //    processor.Emit(OpCodes.Box, td);
-        //    processor.Emit(OpCodes.Call, Debug_LogWarning_MethodRef);
-        //}
-
-
         /// <summary>
         /// Creates a debug warning appends the instructions.
         /// </summary>
@@ -368,6 +386,7 @@ namespace FishNet.CodeGenerating.Helping
             processor.Emit(OpCodes.Ldstr, message);
             processor.Emit(OpCodes.Call, Debug_LogWarning_MethodRef);
         }
+
 
         #region CreateVariable / CreateParameter.
         /// <summary>

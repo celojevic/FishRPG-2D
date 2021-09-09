@@ -8,8 +8,6 @@ using FishNet.Transporting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System.Collections.Generic;
-using Unity.CompilationPipeline.Common.Diagnostics;
-using UnityEngine;
 
 namespace FishNet.CodeGenerating.Processing
 {
@@ -26,8 +24,6 @@ namespace FishNet.CodeGenerating.Processing
         {
             bool modified = false;
 
-            //All created method definitions.
-            List<MethodDefinition> createdMethodDefs = new List<MethodDefinition>();
             //Logic method definitions.
             List<(RpcType, MethodDefinition, MethodDefinition, int)> delegateMethodDefs = new List<(RpcType, MethodDefinition originalMethodDef, MethodDefinition readerMethodDef, int methodHash)>();
             MethodDefinition[] startingMethodDefs = typeDef.Methods.ToArray();
@@ -54,22 +50,16 @@ namespace FishNet.CodeGenerating.Processing
 
                 if (writerMethodDef != null && readerMethodDef != null && logicMethodDef != null)
                 {
-                    createdMethodDefs.AddRange(new MethodDefinition[] { writerMethodDef, readerMethodDef, logicMethodDef });
+                    modified = true;
                     delegateMethodDefs.Add((rpcType, methodDef, readerMethodDef, allRpcCount));
                     allRpcCount++;
                 }
             }
 
-            if (createdMethodDefs.Count > 0)
+            if (modified)
             {
                 bool constructorCreated;
                 MethodDefinition constructorMethodDef = CodegenSession.GeneralHelper.GetOrCreateConstructor(typeDef, out constructorCreated, false);
-
-                /* Add each method to typeDef. This also
-                 * initializes them with properties related to
-                 * the typeDef, such as Module. */
-                foreach (var md in createdMethodDefs)
-                    typeDef.Methods.Add(md);
 
                 ILProcessor constructorProcesser = constructorMethodDef.Body.GetILProcessor();
                 //NetworkObject.Create_____Delegate.
@@ -334,10 +324,20 @@ namespace FishNet.CodeGenerating.Processing
             if (rpcType == RpcType.Server)
                 connectionParameterDef = CodegenSession.GeneralHelper.CreateParameter(createdMethodDef, CodegenSession.ReaderHelper.NetworkConnection_TypeRef);
 
+
+            /* It's very important to read everything
+             * from the PooledReader before applying any
+             * exit logic. Should the method return before
+             * reading the data then anything after the rpc
+             * packet will be malformed due to invalid index. */
             VariableDefinition[] readVariableDefs = new VariableDefinition[writtenParameters.Count];
-            //Create a read for each type.
+            List<Instruction> allReadInsts = new List<Instruction>();
             for (int i = 0; i < writtenParameters.Count; i++)
-                readVariableDefs[i] = CodegenSession.ReaderHelper.CreateRead(createdProcessor, createdMethodDef, readerParameterDef, writtenParameters[i].ParameterType);
+            {
+                //Get read instructions and insert it before the return.
+                List<Instruction> insts = CodegenSession.ReaderHelper.CreateReadInstructions(createdProcessor, createdMethodDef, readerParameterDef, writtenParameters[i].ParameterType, out readVariableDefs[i]);
+                allReadInsts.AddRange(insts);
+            }
 
             //Only if ServerRpc.
             /* Add the conditions after the reader pulls all the needed information.
@@ -345,23 +345,56 @@ namespace FishNet.CodeGenerating.Processing
              * packets as well, so if the client did somehow manage to send a
              * rpc through it needs to be cleared from reader by using Read methods. */
             if (rpcType == RpcType.Server)
-                CreateServerRpcConditionsForServer(createdProcessor, rpcAttribute, connectionParameterDef);
-
-            /* Pass all created variables into the logic method. */
-            createdProcessor.Emit(OpCodes.Ldarg_0); //this.
-            //If also a targetRpc then pass in local connection.
-            if (rpcType == RpcType.Target)
             {
+                Instruction retInst = CreateServerRpcConditionsForServer(createdProcessor, rpcAttribute, connectionParameterDef);
+                if (retInst != null)
+                    createdProcessor.InsertBefore(retInst, allReadInsts);
+
+                createdProcessor.Add(allReadInsts);
+
+                createdProcessor.Emit(OpCodes.Ldarg_0); //this.
+                //Add each read variable as an argument.
+                foreach (VariableDefinition vd in readVariableDefs)
+                    createdProcessor.Emit(OpCodes.Ldloc, vd);
+            }
+            else if (rpcType == RpcType.Observers)
+            {
+                bool includeOwner = rpcAttribute.GetField("IncludeOwner", true);
+                //If to not include owner then don't call logic.
+                if (!includeOwner)
+                {
+                    //Create return if owner.
+                    Instruction retInst = CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Off, true, true);
+                    //Create variables that take from reader. They arent used but reader must still be flushed of content for this packet.
+                    createdProcessor.InsertBefore(retInst, allReadInsts);
+                    
+                    createdProcessor.Add(allReadInsts);
+                }
+                else
+                {
+                    createdProcessor.Add(allReadInsts);
+                }
+
+                createdProcessor.Emit(OpCodes.Ldarg_0); //this.
+                //Add each read variable as an argument.
+                foreach (VariableDefinition vd in readVariableDefs)
+                    createdProcessor.Emit(OpCodes.Ldloc, vd);
+            }
+            else if (rpcType == RpcType.Target)
+            {
+                createdProcessor.Add(allReadInsts);
+
+                createdProcessor.Emit(OpCodes.Ldarg_0); //this.
+                //Pass in owner as connection. //todo this should actually be clients connection.
                 createdProcessor.Emit(OpCodes.Ldarg_0); //this.
                 createdProcessor.Emit(OpCodes.Call, CodegenSession.ObjectHelper.NetworkBehaviour_Owner_MethodRef);
+                //Add each read variable as an argument.
+                foreach (VariableDefinition vd in readVariableDefs)
+                    createdProcessor.Emit(OpCodes.Ldloc, vd);
             }
-            //Add each read variable as an argument.
-            foreach (VariableDefinition vd in readVariableDefs)
-                createdProcessor.Emit(OpCodes.Ldloc, vd);
+
             //Call __Logic method.
             createdProcessor.Emit(OpCodes.Call, logicMethodDef);
-
-            //Add end of method.
             createdProcessor.Emit(OpCodes.Ret);
 
             return createdMethodDef;
@@ -377,7 +410,7 @@ namespace FishNet.CodeGenerating.Processing
             bool requireOwnership = rpcAttribute.GetField("RequireOwnership", true);
             //If (!base.IsOwner);
             if (requireOwnership)
-                CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Warn, true);
+                CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(createdProcessor, LoggingType.Warn, false, true);
             //If (!base.IsClient)
             CodegenSession.ObjectHelper.CreateIsClientCheck(createdProcessor, methodDef, LoggingType.Warn, true, true);
         }
@@ -387,15 +420,17 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         /// <param name="createdProcessor"></param>
         /// <param name="rpcAttribute"></param>
-        /// <param name="rpcType"></param>
-        private void CreateServerRpcConditionsForServer(ILProcessor createdProcessor, CustomAttribute rpcAttribute, ParameterDefinition connectionParametereDef)
+        /// <returns>Ret instruction.</returns>
+        private Instruction CreateServerRpcConditionsForServer(ILProcessor createdProcessor, CustomAttribute rpcAttribute, ParameterDefinition connectionParametereDef)
         {
             bool requireOwnership = rpcAttribute.GetField("RequireOwnership", true);
             /* Don't need to check if server on receiving end.
              * Next compare connection with owner. */
             //If (!base.Owner);
             if (requireOwnership)
-                CodegenSession.ObjectHelper.CreateRemoteClientIsOwnerCheck(createdProcessor, connectionParametereDef);
+                return CodegenSession.ObjectHelper.CreateRemoteClientIsOwnerCheck(createdProcessor, connectionParametereDef);
+            else
+                return null;
         }
 
         /// <summary>

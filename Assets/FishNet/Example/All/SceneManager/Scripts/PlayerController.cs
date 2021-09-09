@@ -1,6 +1,5 @@
 ﻿using FishNet.Object;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace FirstGearGames.FlexSceneManager.Demos
 {

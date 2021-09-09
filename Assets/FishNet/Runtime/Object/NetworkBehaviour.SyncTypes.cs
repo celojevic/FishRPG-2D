@@ -2,14 +2,12 @@
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using FishNet.Transporting;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace FishNet.Object
 {
-
-
+    
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         #region Types.
@@ -75,7 +73,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="sb"></param>
         /// <param name="index"></param>
-        public void RegisterSyncTypeInternal(SyncBase sb, uint index)
+        internal void RegisterSyncType(SyncBase sb, uint index)
         {
             if (sb.IsSyncObject)
                 _syncObjects.Add(index, sb);
@@ -154,7 +152,7 @@ namespace FishNet.Object
                 else
                 {
                     if (_syncVars.ContainsKey(index))
-                        ReadSyncVarInternal(reader, index);
+                        ReadSyncVar(reader, index);
                     else
                         Debug.LogError($"SyncVar not found for index {index} on {transform.name}.");
                 }
@@ -166,7 +164,7 @@ namespace FishNet.Object
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="index"></param>
-        public virtual void ReadSyncVarInternal(PooledReader reader, uint index) { } 
+        internal virtual void ReadSyncVar(PooledReader reader, uint index) { }
 
         /// <summary>
         /// Writers dirty SyncTypes if their write tick has been met.
@@ -208,14 +206,14 @@ namespace FishNet.Object
                             _syncTypeWriters[i].Reset();
                     }
 
+                    //Find channel.
+                    byte channel = (byte)sb.Channel;
                     sb.ResetDirty();
                     //If ReadPermission is owner but no owner skip this syncvar write.
                     if (sb.Settings.ReadPermission == ReadPermission.OwnerOnly && !NetworkObject.OwnerIsValid)
                         continue;
 
                     dataWritten = true;
-                    //Find channel. If not available use default reliable.
-                    byte channel = (byte)sb.Settings.Channel;
                     //Find PooledWriter to use.
                     PooledWriter writer = null;
                     for (int i = 0; i < _syncTypeWriters.Length; i++)
@@ -264,6 +262,15 @@ namespace FishNet.Object
                             {
                                 PacketId packetId = (isSyncObject) ? PacketId.SyncObject : PacketId.SyncVar;
                                 packetWriter.WriteByte((byte)packetId);
+
+                                //If unreliable
+                                if ((Channel)channel == Channel.Unreliable)
+                                {
+                                    //int packetLength = 
+                                    //This needs to use actual packet size.
+                                    packetWriter.WriteInt32(999999999);
+                                }
+
                                 packetWriter.WriteNetworkBehaviour(this);
                                 packetWriter.WriteBytesAndSize(channelWriter.GetBuffer(), 0, channelWriter.Length);
 
@@ -285,10 +292,11 @@ namespace FishNet.Object
         }   
 
 
-        public bool SyncTypeEquals<T>(T a, T b)
-        {
-            return EqualityComparer<T>.Default.Equals(a, b);
-        }
+        //public bool SyncTypeEquals<T>(T a, T b)
+        //{
+        //    return EqualityComparer<T>.Default.Equals(a, b);
+        //}
+
         /// <summary>
         /// Resets all SyncVars for this NetworkBehaviour.
         /// </summary>

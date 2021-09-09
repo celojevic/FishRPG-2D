@@ -135,8 +135,9 @@ namespace FishNet.Managing.Client.Object
         /// Parses a received syncVar.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseSyncType(PooledReader reader, bool isSyncObject)
+        internal void ParseSyncType(PooledReader reader, bool isSyncObject, int dataLength)
         {
+            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
             {
@@ -149,7 +150,15 @@ namespace FishNet.Managing.Client.Object
             }
             else
             {
-                Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse SyncVar packet.");
+                if (dataLength == -1)
+                {
+                    Debug.LogWarning($"NetworkBehaviour could not be found for SyncType.");
+                }
+                else
+                {
+                    reader.Position = startPosition;
+                    reader.Skip(Math.Min(dataLength, reader.Remaining));
+                }
             }
         }
 
@@ -157,25 +166,51 @@ namespace FishNet.Managing.Client.Object
         /// Parses an ObserversRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseObserversRpc(PooledReader reader)
+        internal void ParseObserversRpc(PooledReader reader, int dataLength)
         {
+            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
+            {
                 nb.OnObserversRpc(reader);
+            }
             else
-                Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse ObserversRpc packet.");
+            {
+                if (dataLength == -1)
+                { 
+                    Debug.LogWarning($"NetworkBehaviour could not be found for ObserversRpc.");
+                }
+                else
+                {
+                    reader.Position = startPosition;
+                    reader.Skip(Math.Min(dataLength, reader.Remaining));
+                }
+            }
         }
         /// <summary>
         /// Parses a TargetRpc.
         /// </summary>
         /// <param name="reader"></param>
-        internal void ParseTargetRpc(PooledReader reader)
+        internal void ParseTargetRpc(PooledReader reader, int dataLength)
         {
+            int startPosition = reader.Position;
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             if (nb != null)
+            {
                 nb.OnTargetRpc(reader);
+            }
             else
-                Debug.LogWarning($"NetworkBehaviour could not be found when trying to parse TargetRpc packet.");
+            {
+                if (dataLength == -1)
+                {
+                    Debug.LogWarning($"NetworkBehaviour could not be found for TargetRpc.");
+                }
+                else
+                {
+                    reader.Position = startPosition;
+                    reader.Skip(Math.Min(dataLength, reader.Remaining));
+                }
+            }
         }
 
 
@@ -196,13 +231,26 @@ namespace FishNet.Managing.Client.Object
                 nob = ReadSpawnedObject(reader, objectId);
 
             ArraySegment<byte> syncValues = reader.ReadArraySegmentAndSize();
+
+            /*If nob is null then exit method. Since ClientObjects gets nob from
+             * server objects as host this can occur sometimes
+             * when the object is destroyed on server before client gets
+             * spawn packet. */
+            if (nob == null)
+            {
+                //Only error if client only.
+                if (!NetworkManager.IsHost)
+                    Debug.LogError($"Spawn object could not be found or created for Id {objectId}; scene object: {sceneObject}.");
+
+                return;
+            }
             /* If not host then pre-initialize. Pre-initializing applies
              * values needed to run such as owner, network manager, and completes
              * other reference creating functions. */
             if (!base.NetworkManager.IsHost)
             {
                 NetworkConnection owner = new NetworkConnection(NetworkManager, ownerId);
-                nob.PreInitialize(NetworkManager, objectId, owner, false);
+                nob.PreInitialize(NetworkManager, objectId, owner, false, base.NetworkManager.TimeManager.Tick);
             }
 
             _objectCache.AddSpawn(nob, syncValues, NetworkManager);

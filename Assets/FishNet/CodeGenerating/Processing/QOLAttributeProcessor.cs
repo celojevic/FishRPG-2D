@@ -35,19 +35,8 @@ namespace FishNet.CodeGenerating.Processing
                     continue;
                 }
 
-                ///* If server, client, attribute and doesn't inherit
-                // * from network behaviour. */
-                //if ((qolType == QolAttributeType.Server || qolType == QolAttributeType.Client) &&
-                //    !typeDef.InheritsNetworkBehaviour())
-                //{
-                //    string attributeShortText = (qolType == QolAttributeType.Server) ? "[Server]" : "[Client]";
-                //    CodegenSession.AddWarning($"{attributeShortText} is used on {typeDef.FullName} which does not utilize NetworkBehaviour. The attribute may remain but will only be supported on NetworkBehaviour scripts until a later release.");
-                //}
-                //else
-                //{
                 CreateAttributeMethod(methodDef, qolAttribute, qolType);
                 modified = true;
-                //} 
             }
 
             return modified;
@@ -133,7 +122,7 @@ namespace FishNet.CodeGenerating.Processing
                 bool requireOwnership = qolAttribute.GetField("RequireOwnership", false);
                 //If (!base.IsOwner);
                 if (requireOwnership)
-                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, true);
+                    CodegenSession.ObjectHelper.CreateLocalClientIsOwnerCheck(processor, logging, false, true);
 
                 CodegenSession.ObjectHelper.CreateIsClientCheck(processor, methodDef, logging, inheritsNetworkBehaviour, true);
             }

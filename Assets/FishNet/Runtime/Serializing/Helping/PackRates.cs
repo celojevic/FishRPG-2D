@@ -1,11 +1,11 @@
 ﻿namespace FishNet.Serializing.Helping
 {
-    public enum PackRates : byte
+    public enum PackRate : byte
     {
-        Positive1 = 1,
-        Positive2 = 3,
-        Positive4 = 5,
-        Positive8 = 7,
+        OneByte = 1,
+        TwoBytes = 2,
+        FourBytes = 4,
+        EightBytes = 8,
     } 
 
 }

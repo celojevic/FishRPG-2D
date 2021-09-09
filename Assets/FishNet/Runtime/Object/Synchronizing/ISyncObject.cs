@@ -17,7 +17,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// Sets index for the SyncType.
         /// </summary>
         /// <param name="index"></param>
-        void SetSyncIndexInternal(NetworkBehaviour networkBehaviour, uint index);
+        void SetSyncIndex(NetworkBehaviour networkBehaviour, uint index);
         /// <summary>
         /// PreInitializes this for use with the network.
         /// </summary>

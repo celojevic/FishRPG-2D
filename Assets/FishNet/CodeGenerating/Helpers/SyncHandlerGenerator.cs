@@ -43,7 +43,7 @@ namespace FishNet.CodeGenerating.Helping
 
             foreach (MethodInfo methodInfo in syncBaseType.GetMethods())
             {
-                if (methodInfo.Name == nameof(SyncBase.SetSyncIndexInternal))
+                if (methodInfo.Name == nameof(SyncBase.SetSyncIndex))
                     SyncBase_SetSyncIndex_MethodRef = CodegenSession.Module.ImportReference(methodInfo);
             }
 
@@ -133,7 +133,7 @@ namespace FishNet.CodeGenerating.Helping
                 MethodReference baseResetMethodRef = null;
                 MethodReference baseWriteMethodRef = null;
                 MethodReference baseDirtyMethodRef = null;
-                MethodReference baseInitializeInstanceInternalMethodRef = null;
+                MethodReference baseInitializeInstanceMethodRef = null;
                 foreach (MethodDefinition methodDef in syncBaseTypeDef.Methods)
                 {
                     if (methodDef.Name == nameof(SyncBase.Read))
@@ -144,8 +144,8 @@ namespace FishNet.CodeGenerating.Helping
                         baseWriteMethodRef = CodegenSession.Module.ImportReference(methodDef);
                     else if (methodDef.Name == nameof(SyncBase.Dirty))
                         baseDirtyMethodRef = CodegenSession.Module.ImportReference(methodDef);
-                    else if (methodDef.Name == nameof(SyncBase.InitializeInstanceInternal))
-                        baseInitializeInstanceInternalMethodRef = CodegenSession.Module.ImportReference(methodDef);
+                    else if (methodDef.Name == nameof(SyncBase.InitializeInstance))
+                        baseInitializeInstanceMethodRef = CodegenSession.Module.ImportReference(methodDef);
 
                 }
                 //Fields
@@ -168,7 +168,7 @@ namespace FishNet.CodeGenerating.Helping
                 syncClassTypeDef.Fields.Add(valueFieldDef);
 
                 MethodDefinition tmpMd;
-                tmpMd = CreateSyncHandlerConstructor(syncClassTypeDef, dataTypeRef.Resolve(), previousClientValueFieldDef, initializeValueFieldDef, valueFieldDef, baseInitializeInstanceInternalMethodRef);
+                tmpMd = CreateSyncHandlerConstructor(syncClassTypeDef, dataTypeRef.Resolve(), previousClientValueFieldDef, initializeValueFieldDef, valueFieldDef, baseInitializeInstanceMethodRef);
                 MethodReference syncHandlerConstructorMethodRef = CodegenSession.Module.ImportReference(tmpMd);
 
                 tmpMd = CreateSetValueMethodDefinition(syncClassTypeDef, valueFieldDef, previousClientValueFieldDef, baseNetworkBehaviourFieldRef, baseDirtyMethodRef, dataTypeRef);

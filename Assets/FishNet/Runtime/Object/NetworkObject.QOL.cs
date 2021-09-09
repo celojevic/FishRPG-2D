@@ -1,4 +1,6 @@
-﻿using FishNet.Connection;
+﻿using FishNet.Broadcast;
+using FishNet.Connection;
+using FishNet.Transporting;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -29,7 +31,7 @@ namespace FishNet.Object
         /// <summary>
         /// True if the owner of this object. Only contains value on clients.
         /// </summary>
-        public bool IsOwner => (NetworkManager == null || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
+        public bool IsOwner => (NetworkManager == null || !OwnerIsValid || !IsClient) ? false : (NetworkManager.ClientManager.Connection == Owner);
         /// <summary> 
         /// True if the owner is a valid connection.
         /// </summary>
@@ -49,9 +51,6 @@ namespace FishNet.Object
         /// </summary>
         public void Despawn()
         {
-            if (!CanSpawnOrDespawn(true))
-                return;
-
             NetworkManager.ServerManager.Despawn(this);
         }
         /// <summary>
@@ -105,6 +104,24 @@ namespace FishNet.Object
             return canExecute;
         }
 
+        /// <summary>
+        /// Sends a Broadcast to observers for this NetworkObject.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="networkObject"></param>
+        /// <param name="message"></param>
+        /// <param name="requireAuthenticated">True if the broadcast can only go to an authenticated connection.</param>
+        /// <param name="channel"></param>
+        public void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast
+        {
+            if (NetworkManager == null)
+            {
+                Debug.LogWarning($"Cannot send broadcast from {gameObject.name}, NetworkManager reference is null. This may occur if the object is not spawned or initialized.");
+                return;
+            }
+
+            NetworkManager.ServerManager.Broadcast(Observers, message, requireAuthenticated, channel);
+        }
     }
 
 }

@@ -1,8 +1,9 @@
-﻿using UnityEngine;
+﻿using System.Runtime.CompilerServices;
+using UnityEngine;
 
+[assembly: InternalsVisibleTo(FishNet.Constants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
-
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
     {
