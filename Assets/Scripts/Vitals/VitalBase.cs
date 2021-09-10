@@ -33,25 +33,11 @@ public class VitalBase : NetworkBehaviour
     /// <summary>
     /// Invoked whenever the vital hits 0. Kind of like OnDeath for Health.
     /// </summary>
-    protected event Action OnDepleted;
+    public event Action OnDepleted;
     /// <summary>
     /// Invoked any time the vital changes.
     /// </summary>
     public event Action OnVitalChanged;
-
-    private void Update()
-    {
-        if (!IsOwner) return;
-        //debug
-        if (Input.GetKeyDown(KeyCode.K))
-            Hurt();
-    }
-
-    [ServerRpc]
-    void Hurt()
-    {
-        Subtract(10);
-    }
 
     public override void OnStartServer()
     {
@@ -59,32 +45,15 @@ public class VitalBase : NetworkBehaviour
     }
 
     [Server]
-    public void Add(int amount)
+    public virtual void Add(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital + amount, _minVital, MaxVital);
-
-        // TODO spawn on enemy world canvas if enemy in SpawnActionMsg
-        // TODO make virtual void and override these in Healht/Mana
-        if (this is Health)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", 
-                Color.green, gameObject);
-        else if (this is Mana)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}", 
-                Color.cyan, gameObject);
-    
     }
 
     [Server]
-    public void Subtract(int amount)
+    public virtual void Subtract(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital - amount, _minVital, MaxVital);
-
-        if (this is Health)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", 
-                Color.red, gameObject);
-        else if (this is Mana)
-            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}", 
-                Color.magenta, gameObject);
 
         if (CurrentVital == _minVital)
             OnDepleted?.Invoke();

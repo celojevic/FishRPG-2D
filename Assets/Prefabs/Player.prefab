@@ -268,6 +268,7 @@ GameObject:
   - component: {fileID: 4576581613593028736}
   - component: {fileID: 3398067251602312817}
   - component: {fileID: 6787471158684533656}
+  - component: {fileID: 5120532770592386862}
   - component: {fileID: 3095267122229149581}
   - component: {fileID: 4576581613593028743}
   - component: {fileID: 4576581613593028742}
@@ -339,6 +340,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78b18410f7224b440940c050e77f8f07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Vitals: []
   Class: {fileID: 11400000, guid: 50108271fe796b947864b10075fd2136, type: 2}
   Combat: {fileID: 7122920321038994759}
   Equipment: {fileID: 6177808279878682317}
@@ -346,7 +348,6 @@ MonoBehaviour:
   Inventory: {fileID: 6787471158684533656}
   Movement: {fileID: 4576581613593028743}
   Visuals: {fileID: 4576581613593028742}
-  Vitals: []
 --- !u!114 &7122920321038994759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -426,6 +427,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _data: {fileID: 11400000, guid: bfa87652baec44b459b848e83b6a6337, type: 2}
   Items: []
+--- !u!114 &5120532770592386862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4576581613593028746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2205b3cd3ae6682498e1c8d9e8c74203, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &3095267122229149581
 MonoBehaviour:
   m_ObjectHideFlags: 0
