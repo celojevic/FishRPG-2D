@@ -12,21 +12,20 @@ public class Enemy : Entity
         Rewards = GetComponent<EnemyRewards>();
     }
 
-    //public override void OnStartServer()
-    //{
-    //    GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
-    //}
+    public override void OnStartServer()
+    {
+        GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
+    }
 
-    //public override void OnStopServer()
-    //{
-    //    GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
-    //}
+    public override void OnStopServer()
+    {
+        GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
+    }
 
-    //[Server]
-    //private void Enemy_OnDepleted()
-    //{
-    //    Despawn();
-    //}
-
+    [Server]
+    private void Enemy_OnDepleted()
+    {
+        Rewards.DropItems();
+    }
 
 }

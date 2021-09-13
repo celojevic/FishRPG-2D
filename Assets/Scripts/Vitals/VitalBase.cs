@@ -60,7 +60,7 @@ public class VitalBase : NetworkBehaviour
     {
         CurrentVital = Mathf.Clamp(CurrentVital - amount, _minVital, MaxVital);
         if (CurrentVital <= _minVital)
-            Despawn();
+            OnDeplete();
     }
 
     [Server]

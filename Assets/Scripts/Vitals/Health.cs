@@ -21,6 +21,7 @@ public class Health : VitalBase
     [Server]
     protected override void OnDeplete()
     {
+        base.OnDeplete();
         Despawn();
     }
 

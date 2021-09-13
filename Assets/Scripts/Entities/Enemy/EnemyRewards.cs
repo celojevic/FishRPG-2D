@@ -8,33 +8,15 @@ public class EnemyRewards : ItemDropper
     // TODO options: drops for killer only, drops for anyone
     public ItemReward[] ItemRewards;
 
-    /// <summary>
-    /// The master Enemy script.
-    /// </summary>
-    private Enemy _enemy;
-
-    private void Awake()
+    [Server]
+    public void DropItems()
     {
-        _enemy = GetComponent<Enemy>();
-    }
+        if (!ItemRewards.IsValid()) return;
 
-    private void Start()
-    {
-        _enemy.GetVital(VitalType.Health).OnDepleted += EnemyRewards_OnDepleted;
-    }
-
-    private void OnDestroy()
-    {
-        _enemy.GetVital(VitalType.Health).OnDepleted -= EnemyRewards_OnDepleted;
-    }
-
-    private void EnemyRewards_OnDepleted()
-    {
-        SpawnItemDrop(new ItemValue 
-        { 
-            Item = ItemRewards[0].Item, 
-            Quantity = ItemRewards[0].Quantity 
-        }, transform.position);
+        SpawnItemDrop(
+            new ItemValue(ItemRewards[Random.Range(0, ItemRewards.Length)]),
+            transform.position
+        );
     }
 
 }
@@ -46,5 +28,5 @@ public class ItemReward
     public int Quantity;
     public float Chance;
 
-    // TODO cumulative and regular options
+    // TODO cumulative and regular options, move itemRewards to base ItmeDropper class
 }

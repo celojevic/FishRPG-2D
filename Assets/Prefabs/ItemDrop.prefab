@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1759408588193287598}
   m_Layer: 0
   m_Name: ItemDrop
-  m_TagString: Untagged
+  m_TagString: Interactable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -46,6 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a72da61c4f78e794faac914f021360c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _otherTag: Player
+  _localPlayerOnly: 1
+  InteractText: 
   ItemValue:
     Item: {fileID: 11400000, guid: 6fa38875fd8735347bd2afaf6c2f3f9b, type: 2}
     Quantity: 1
@@ -78,9 +81,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefabId: 2
-  _scenePathHash: 584410112
+  NetworkObserver: {fileID: 0}
+  _prefabId: 3
+  _scenePathHash: 0
   _sceneId: 0
+  _sceneNetworkObjects:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 1759408588193287598}
   SceneTransformProperties:
     Position: {x: -3.76, y: -3.02, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
