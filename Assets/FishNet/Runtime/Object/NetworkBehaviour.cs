@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[assembly: InternalsVisibleTo(FishNet.Constants.CODEGEN_ASSEMBLY_NAME)]
+[assembly: InternalsVisibleTo(Constants.CODEGEN_ASSEMBLY_NAME)]
 namespace FishNet.Object
 {
 

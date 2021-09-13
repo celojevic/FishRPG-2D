@@ -80,12 +80,21 @@ namespace FishNet.Managing.Server
             SubscribeToTransport(false);
             SubscribeToTransport(true);
             NetworkManager.TransportManager.OnIterateIncomingEnd += TransportManager_OnIterateIncomingEnd;
+            NetworkManager.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
 
             if (_authenticator != null)
             {
                 _authenticator.FirstInitialize(manager);
                 _authenticator.OnAuthenticationResult += _authenticator_OnAuthenticationResult;
             }
+        }
+
+        /// <summary>
+        /// Called when a client loads initial scenes after connecting.
+        /// </summary>
+        private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn)
+        {
+            Objects.RebuildObservers(conn);
         }
 
         /// <summary>
@@ -239,7 +248,8 @@ namespace FishNet.Managing.Server
                         packetId = (PacketId)reader.ReadByte();
 
                         ///<see cref="FishNet.Managing.Client.ClientManager.ParseReceived"/>
-                        int dataLength = (args.Channel == Channel.Reliable) ? -1 : reader.ReadInt32(AutoPackType.Packed);
+                        int dataLength = (args.Channel == Channel.Reliable || packetId == PacketId.Broadcast) ?
+                            -1 : reader.ReadInt32();
 
                         NetworkConnection conn;
                         Clients.TryGetValue(args.ConnectionId, out conn);

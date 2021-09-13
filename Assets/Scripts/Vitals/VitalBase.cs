@@ -44,6 +44,11 @@ public class VitalBase : NetworkBehaviour
         CurrentVital = MaxVital;
     }
 
+    /// <summary>
+    /// Adds the given amount to the current vital clamped between the minVital and MaxVital.
+    /// Base method must be called in overrides.
+    /// </summary>
+    /// <param name="amount"></param>
     [Server]
     public virtual void Add(int amount)
     {
@@ -54,9 +59,14 @@ public class VitalBase : NetworkBehaviour
     public virtual void Subtract(int amount)
     {
         CurrentVital = Mathf.Clamp(CurrentVital - amount, _minVital, MaxVital);
+        if (CurrentVital <= _minVital)
+            Despawn();
+    }
 
-        if (CurrentVital == _minVital)
-            OnDepleted?.Invoke();
+    [Server]
+    protected virtual void OnDeplete()
+    {
+        OnDepleted?.Invoke();
     }
 
 }

@@ -15,15 +15,15 @@ namespace FishNet.Serializing
     /// Used for read references to generic types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    [CodegenIncludeInternal]
+    //[CodegenIncludeInternal]
     public static class GenericReader<T>
     {
         public static Func<Reader, T> Read { internal get; set; }
         public static Func<Reader, AutoPackType, T> ReadAutoPack { internal get; set; }
     }
 
-    [CodegenIncludeInternal]
-    public partial class Reader
+    //[CodegenIncludeInternal]
+    public class Reader
     {
         #region Public.
         /// <summary>
@@ -758,7 +758,15 @@ namespace FishNet.Serializing
             else
             {
                 byte componentIndex = ReadByte();
-                return nob.NetworkBehaviours[componentIndex];
+                if (componentIndex < 0 || componentIndex >= nob.NetworkBehaviours.Length)
+                {
+                    Debug.LogError($"ComponentIndex of {componentIndex} is out of bounds on {nob.gameObject.name}. This may occur if you have modified your gameObject/prefab without saving it, or the scene.");
+                    return null;
+                }
+                else
+                {
+                    return nob.NetworkBehaviours[componentIndex];
+                }
             }
         }
 

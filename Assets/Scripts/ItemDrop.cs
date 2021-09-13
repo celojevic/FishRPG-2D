@@ -31,6 +31,12 @@ public class ItemDrop : Interactable
         }
     }
 
+    public void Setup(ItemValue itemValue)
+    {
+        ItemValue = itemValue;
+        _sr.sprite = itemValue.Item.Sprite;
+    }
+
     #region Editor
 #if UNITY_EDITOR
 

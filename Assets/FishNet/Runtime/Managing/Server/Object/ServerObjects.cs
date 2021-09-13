@@ -49,8 +49,6 @@ namespace FishNet.Managing.Server.Object
             base.NetworkManager = networkManager;
             InitializeObservers();
         }
-        
-
 
         #region Checking dirty SyncTypes.
         /// <summary>
@@ -151,7 +149,7 @@ namespace FishNet.Managing.Server.Object
         /// </summary>
         /// <returns></returns>
         protected override int GetNextNetworkObjectId()
-        {            
+        {
             //At max values.
             if (_nextNetworkObjectId == int.MaxValue)
             {
@@ -211,29 +209,30 @@ namespace FishNet.Managing.Server.Object
                 return;
             }
 
+            //Iterate root objects, and down their hierarchy.
             foreach (GameObject go in s.GetRootGameObjects())
+            {
+                //Root object first.
+                CheckSetupObject(go);
+                //Objects children.
+                foreach (Transform t in go.transform)
+                    CheckSetupObject(t.gameObject);
+            }
+
+            void CheckSetupObject(GameObject go)
             {
                 NetworkObject nob;
                 //If has a NetworkObject component.
                 if (go.TryGetComponent(out nob))
                 {
-                    //Add to SceneObjects.
-                    if (nob.SceneObject)
-                        base.AddToSceneObjects(nob);
-                    /* If was active in the editor (before hitting play), or currently active
-                     * then PreInitialize without synchronizing to clients. There is no reason
-                     * to synchronize to clients because the scene just loaded on server,
-                     * which means clients are not yet in the scene. */
-                    if (nob.ActiveDuringEdit || nob.gameObject.activeInHierarchy)
-                        SetupWithoutSynchronization(nob);
-                }
-                foreach (Transform t in go.transform)
-                {
-                    if (go.TryGetComponent(out nob))
+                    //Only setup if a scene object and not initialzied.
+                    if (nob.SceneObject && nob.Deinitializing)
                     {
-                        //Add to SceneObjects.
-                        if (nob.SceneObject)
-                            base.AddToSceneObjects(nob);
+                        base.AddToSceneObjects(nob);
+                        /* If was active in the editor (before hitting play), or currently active
+                         * then PreInitialize without synchronizing to clients. There is no reason
+                         * to synchronize to clients because the scene just loaded on server,
+                         * which means clients are not yet in the scene. */
                         if (nob.ActiveDuringEdit || nob.gameObject.activeInHierarchy)
                             SetupWithoutSynchronization(nob);
                     }
@@ -248,7 +247,7 @@ namespace FishNet.Managing.Server.Object
         private void SetupWithoutSynchronization(NetworkObject nob, NetworkConnection ownerConnection = null)
         {
             int objectId = GetNextNetworkObjectId();
-            nob.PreInitialize(NetworkManager, objectId, ownerConnection, true, base.NetworkManager.TimeManager.Tick);
+            nob.PreInitialize(NetworkManager, objectId, ownerConnection, true);
             base.AddToSpawned(nob);
             nob.gameObject.SetActive(true);
             nob.Initialize(true);
@@ -283,6 +282,11 @@ namespace FishNet.Managing.Server.Object
              * during initialization spawn messages will
              * be sent. */
             SetupWithoutSynchronization(networkObject, ownerConnection);
+
+            //If there is an owner then try to add them to the networkObjects scene.
+            if (ownerConnection != null && ownerConnection.IsValid)
+                base.NetworkManager.SceneManager.AddConnectionToScene(ownerConnection, networkObject.gameObject.scene);
+            //Also rebuild observers for the object so it spawns for others.
             RebuildObservers(networkObject);
         }
 
@@ -425,7 +429,7 @@ namespace FishNet.Managing.Server.Object
         {
             PooledWriter everyoneWriter = WriterPool.GetWriter();
             WriteDespawn(nob, ref everyoneWriter);
-            
+
             ArraySegment<byte> despawnSegment = everyoneWriter.GetArraySegment();
             foreach (NetworkConnection conn in nob.Observers)
             {
@@ -446,10 +450,6 @@ namespace FishNet.Managing.Server.Object
         }
     }
     #endregion
-
-
-
-
 
 
 

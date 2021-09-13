@@ -98,7 +98,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Collection to use for spawnable objects.
         /// </summary>
-        public PrefabObjects SpawnablePrefabs => _spawnablePrefabs;
+        public PrefabObjects SpawnablePrefabs { get => _spawnablePrefabs; set => _spawnablePrefabs = value; }
         #endregion
 
         protected virtual void Awake()
@@ -106,19 +106,28 @@ namespace FishNet.Managing
             if (WillBeDestroyed())
                 return;
 
-            _spawnablePrefabs.InitializePrefabRange(0);
+            SpawnablePrefabs.InitializePrefabRange(0);
             SetDontDestroyOnLoad();
             SetRunInBackground();
             EmptyConnection = new NetworkConnection();
             FindTransportManager();
-            AddTimeManager();
-            TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            AddNetworkServerAndClient();
+            AddServerAndClientManagers();
+            AddTimeManager();            
             AddSceneManager();;
+            InitializeComponents();
+        }
+
+        /// <summary>
+        /// Initializes components. To be called after all components are added.
+        /// </summary>
+        private void InitializeComponents()
+        {
+            TimeManager.FirstInitialize(this);
+            TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
+            SceneManager.FirstInitialize(this);
             ServerManager.FirstInitialize(this);
             ClientManager.FirstInitialize(this);
         }
-
         /// <summary>
         /// Called when MonoBehaviours call LateUpdate.
         /// </summary>
@@ -199,9 +208,7 @@ namespace FishNet.Managing
             if (gameObject.TryGetComponent<TimeManager>(out TimeManager result))
                 TimeManager = result;
             else
-                TimeManager = gameObject.AddComponent<TimeManager>();
-
-            TimeManager.FirstInitialize(this);
+                TimeManager = gameObject.AddComponent<TimeManager>();            
         }
 
 
@@ -214,14 +221,12 @@ namespace FishNet.Managing
                 SceneManager = result;
             else
                 SceneManager = gameObject.AddComponent<SceneManager>();
-
-            SceneManager.FirstInitialize(this);
         }
 
         /// <summary>
         /// Adds and assigns NetworkServer and NetworkClient if they are not already setup.
         /// </summary>
-        private void AddNetworkServerAndClient()
+        private void AddServerAndClientManagers()
         {
             //Add ServerManager if missing.
             if (gameObject.TryGetComponent<ServerManager>(out ServerManager sm))
@@ -238,14 +243,16 @@ namespace FishNet.Managing
         private void OnValidate()
         { 
             FindTransportManager();
+            if (SpawnablePrefabs == null)
+                Reset();
         }
         protected virtual void Reset()
         {
-            if (_spawnablePrefabs == null)
+            if (SpawnablePrefabs == null)
             {
-                _spawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
+                SpawnablePrefabs = DefaultPrefabsFinder.GetDefaultPrefabsFile(out _);
                 //If found.
-                if (_spawnablePrefabs != null)
+                if (SpawnablePrefabs != null)
                     Debug.Log($"NetworkManager on {gameObject.name} is using the default prefabs collection.");
             }
         }

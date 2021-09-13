@@ -3,27 +3,30 @@ using UnityEngine;
 
 public class Enemy : Entity
 {
-
+    [Header("Enemy Components")]
     public EnemyRewards Rewards;
 
     protected override void Awake()
     {
         base.Awake();
         Rewards = GetComponent<EnemyRewards>();
-
-        GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
     }
 
-    private void Enemy_OnDepleted()
-    {
+    //public override void OnStartServer()
+    //{
+    //    GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
+    //}
 
-        Despawn();
-    }
+    //public override void OnStopServer()
+    //{
+    //    GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
+    //}
 
-    private void OnDestroy()
-    {
-        GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
-    }
+    //[Server]
+    //private void Enemy_OnDepleted()
+    //{
+    //    Despawn();
+    //}
 
 
 }

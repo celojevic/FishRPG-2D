@@ -16,6 +16,10 @@ public struct SendMsg : IBroadcast
 
 public enum MessageType
 {
+    /// <summary>
+    /// Action messages are floating messages shown in the world, such as damage numbers.
+    /// </summary>
     Action,
+
     Chat,
 }

@@ -269,6 +269,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Vitals: []
+  Rewards: {fileID: 1760982535692097466}
 --- !u!114 &1760982535692097466
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -364,7 +365,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: -1
+  _prefabId: 2
   _scenePathHash: 584410112
   _sceneId: 0
   SceneTransformProperties:

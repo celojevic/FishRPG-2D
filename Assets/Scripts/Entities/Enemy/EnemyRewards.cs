@@ -1,14 +1,41 @@
 using FishNet.Object;
 using UnityEngine;
 
-public class EnemyRewards : MonoBehaviour 
+[RequireComponent(typeof(Enemy))]
+public class EnemyRewards : ItemDropper 
 {
 
+    // TODO options: drops for killer only, drops for anyone
     public ItemReward[] ItemRewards;
 
-    // TODO options: drops for killer only, drops for anyone
+    /// <summary>
+    /// The master Enemy script.
+    /// </summary>
+    private Enemy _enemy;
 
+    private void Awake()
+    {
+        _enemy = GetComponent<Enemy>();
+    }
 
+    private void Start()
+    {
+        _enemy.GetVital(VitalType.Health).OnDepleted += EnemyRewards_OnDepleted;
+    }
+
+    private void OnDestroy()
+    {
+        _enemy.GetVital(VitalType.Health).OnDepleted -= EnemyRewards_OnDepleted;
+    }
+
+    private void EnemyRewards_OnDepleted()
+    {
+        SpawnItemDrop(new ItemValue 
+        { 
+            Item = ItemRewards[0].Item, 
+            Quantity = ItemRewards[0].Quantity 
+        }, transform.position);
+    }
 
 }
 
