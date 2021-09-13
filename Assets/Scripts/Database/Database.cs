@@ -1,6 +1,8 @@
-using UnityEngine;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+
+using UnityEngine;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -41,6 +43,12 @@ public class Database : MonoBehaviour
 
     #endregion
 
+    #region Skills
+
+    public List<SkillBase> Skills = new List<SkillBase>();
+
+    #endregion
+
 }
 
 #region Editor
@@ -69,6 +77,7 @@ public class DatabaseEditor : Editor
         _db.ItemBases = EditorUtils.FindScriptableObjects<ItemBase>();
         _db.Classes = EditorUtils.FindScriptableObjects<ClassBase>();
         _db.Stats = EditorUtils.FindScriptableObjects<StatBase>();
+        _db.Skills = EditorUtils.FindScriptableObjects<SkillBase>();
     }
 
 }
