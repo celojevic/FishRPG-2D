@@ -1,3 +1,4 @@
+using FishNet.Object;
 using UnityEngine;
 
 public class ItemDrop : Interactable
@@ -20,6 +21,7 @@ public class ItemDrop : Interactable
             InteractText = ItemValue.Item.name;
     }
 
+    [Server]
     public override void Interact(Player player)
     {
         if (player == null) return;

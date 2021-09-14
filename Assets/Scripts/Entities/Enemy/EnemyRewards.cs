@@ -7,6 +7,7 @@ public class EnemyRewards : ItemDropper
 
     // TODO options: drops for killer only, drops for anyone
     public ItemReward[] ItemRewards;
+    public ExpReward[] ExpRewards;
 
     [Server]
     public void DropItems()
@@ -29,4 +30,11 @@ public class ItemReward
     public float Chance;
 
     // TODO cumulative and regular options, move itemRewards to base ItmeDropper class
+}
+
+[System.Serializable]
+public class ExpReward
+{
+    public SkillBase Skill;
+    public float Experience;
 }

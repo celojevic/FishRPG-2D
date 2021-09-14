@@ -49,6 +49,12 @@ public class Database : MonoBehaviour
 
     #endregion
 
+    #region Resources
+
+    public List<ResourceData> Resources = new List<ResourceData>();
+
+    #endregion
+
 }
 
 #region Editor
@@ -78,6 +84,7 @@ public class DatabaseEditor : Editor
         _db.Classes = EditorUtils.FindScriptableObjects<ClassBase>();
         _db.Stats = EditorUtils.FindScriptableObjects<StatBase>();
         _db.Skills = EditorUtils.FindScriptableObjects<SkillBase>();
+        _db.Resources = EditorUtils.FindScriptableObjects<ResourceData>();
     }
 
 }

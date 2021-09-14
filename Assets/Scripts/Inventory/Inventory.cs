@@ -26,6 +26,11 @@ public class Inventory : NetworkBehaviour
         NetItems.OnChange += Items_OnChange;
     }
 
+    public override void OnStopClient(bool isOwner)
+    {
+        NetItems.OnChange -= Items_OnChange;
+    }
+
     private void Items_OnChange(SyncListOperation op, int index, 
         NetItemValue oldItem, NetItemValue newItem, bool asServer)
     {
@@ -59,11 +64,6 @@ public class Inventory : NetworkBehaviour
         }
 
         OnItemChanged?.Invoke();
-    }
-
-    private void OnDestroy()
-    {
-        NetItems.OnChange -= Items_OnChange;
     }
 
     #endregion
