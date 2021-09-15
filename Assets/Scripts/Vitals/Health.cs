@@ -22,6 +22,10 @@ public class Health : VitalBase
     protected override void OnDeplete()
     {
         base.OnDeplete();
+
+        // TODO options
+        //  - log enemy KC, player death count
+
         Despawn();
     }
 

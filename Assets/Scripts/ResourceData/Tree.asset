@@ -12,7 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f78ab6ac5f4f36a448a6cf4c2eb1dd92, type: 3}
   m_Name: Tree
   m_EditorClassIdentifier: 
+  ToolReq: {fileID: 11400000, guid: e700bc0f6011b0a419c2fae8b6a80344, type: 2}
+  LevelReq: 1
   FullSprite: {fileID: -6470460504253458178, guid: 2bd0649c0a1658d4d852ac8c25daef3f, type: 3}
   DepletedSprite: {fileID: 6623151957235123224, guid: 2bd0649c0a1658d4d852ac8c25daef3f, type: 3}
   FullController: {fileID: 0}
   DepletedController: {fileID: 0}
+  OnHitFX: {fileID: 5161796654851610979, guid: 019bbac5dc7e23349b94affd681784d8, type: 3}

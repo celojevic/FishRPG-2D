@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 7485872507059034608}
   - component: {fileID: 7485872507059034622}
   - component: {fileID: 7485872507059034623}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Tree
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -159,7 +159,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.010729313, y: 0.06705928}
+  m_Offset: {x: -0.01, y: 0.06}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -170,7 +170,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.560091, y: 0.7478571}
+  m_Size: {x: 0.56, y: 0.75}
   m_EdgeRadius: 0
 --- !u!61 &7485872507059034622
 BoxCollider2D:
@@ -211,13 +211,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 7
+  _prefabId: 5
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 7485872507059034623}
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}

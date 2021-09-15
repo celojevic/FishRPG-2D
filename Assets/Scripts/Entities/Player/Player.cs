@@ -40,4 +40,28 @@ public class Player : Entity
 
     #endregion
 
+    // TODO cache a bool[] for if they have a tool when adding items and equipping
+    public bool HasTool(ToolType toolType)
+    {
+        // check inv
+        foreach (var item in Inventory.NetItems)
+        {
+            if (item == null) continue;
+            var itemBase = Database.Instance.GetItemBase(item.Item.ItemBaseGuid);
+            if (itemBase != null && itemBase is ToolItem tool && tool.ToolType == toolType)
+                return true;
+        }
+
+        // check equipment
+        foreach (var item in Equipment.NetEquipment)
+        {
+            if (item == null) continue;
+            var equip = Database.Instance.GetItemBase(item.ItemBaseGuid);
+            if (equip != null && equip is ToolItem tool && tool.ToolType == toolType)
+                return true;
+        }
+
+        return false;
+    }
+
 }

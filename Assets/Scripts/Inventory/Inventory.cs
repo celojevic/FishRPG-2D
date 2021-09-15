@@ -11,6 +11,9 @@ public class Inventory : NetworkBehaviour
     [SerializeField] private InventoryData _data = null;
 
     public readonly SyncList<NetItemValue> NetItems = new SyncList<NetItemValue>();
+    /// <summary>
+    /// Populated on client only.
+    /// </summary>
     public List<ItemValue> Items = new List<ItemValue>();
 
     /// <summary>

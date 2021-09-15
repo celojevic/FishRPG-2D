@@ -45,18 +45,26 @@ public class PlayerCombat : NetworkBehaviour
         // TODO this is only if skill animation doesnt have collider, make separate script for
         //      anim colliders when they (ontriggerenter)
         var hits = Physics2D.OverlapCircleAll(_player.GetCenter() + dir * _basicMeleeAttack.Range,
-            _basicMeleeAttack.AoeRadius, LayerMask.GetMask("Enemy"));
+            _basicMeleeAttack.AoeRadius, LayerMask.GetMask("Enemy", "Resource"));
         if (hits.IsValid())
         {
             foreach (var item in hits)
             {
-                if (item.isTrigger)
+                // enemy
+                if (item.isTrigger && item.GetComponent<Enemy>())
                 {
-                    Health h = item.GetComponent<Health>();
-                    if (h)
-                        h.Subtract(_basicMeleeAttack.BaseDamage);
+                    item.GetComponent<Health>()?.Subtract(_basicMeleeAttack.BaseDamage);
                     SpawnImpactAnim(item.transform.position);
                 }
+
+                // resource
+                if (item.isTrigger)
+                {
+                    ResourceNode node = item.GetComponent<ResourceNode>();
+                    if (node != null && node.MeetsRequirements(_player))
+                        node.RpcSpawnImpactAnim();
+                }
+
             }
         }
     }

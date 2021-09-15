@@ -30,4 +30,4 @@ MonoBehaviour:
     BaseValue: 1
     RandomStats: 0
     ValueRange: {x: 0, y: 0}
-  ToolType: 0
+  ToolType: {fileID: 11400000, guid: e700bc0f6011b0a419c2fae8b6a80344, type: 2}
