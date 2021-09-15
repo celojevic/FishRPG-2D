@@ -1,4 +1,5 @@
 using FishNet.Object;
+using FishRPG.AI;
 using UnityEngine;
 
 public class Player : Entity
@@ -32,11 +33,6 @@ public class Player : Entity
         Inventory = GetComponent<PlayerInventory>();
         Movement = GetComponent<PlayerMovement>();
         Visuals = GetComponent<PlayerVisuals>();
-    }
-
-    public override void OnStartServer()
-    {
-        FindObjectOfType<AIAgent>().Target = transform;
     }
 
     #region Class

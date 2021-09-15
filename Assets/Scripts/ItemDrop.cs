@@ -1,3 +1,4 @@
+using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
 
@@ -29,8 +30,16 @@ public class ItemDrop : Interactable
 
         if (player.Inventory.AddItem(ItemValue))
         {
+            TargetSendPickupSound(player.Owner);
             Despawn();
         }
+    }
+
+    [TargetRpc]
+    void TargetSendPickupSound(NetworkConnection conn)
+    {
+        if (ItemValue.Item.PickupSound)
+            AudioSource.PlayClipAtPoint(ItemValue.Item.PickupSound, transform.position);
     }
 
     public void Setup(ItemValue itemValue)

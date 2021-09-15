@@ -1598,7 +1598,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 336234074}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.45454547
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2136,6 +2136,7 @@ GameObject:
   - component: {fileID: 1023973342}
   - component: {fileID: 1023973345}
   - component: {fileID: 1023973346}
+  - component: {fileID: 1023973347}
   m_Layer: 0
   m_Name: Pixel Perfect Camera
   m_TagString: MainCamera
@@ -2287,6 +2288,14 @@ MonoBehaviour:
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_Version: 2
+--- !u!81 &1023973347
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1023973341}
+  m_Enabled: 1
 --- !u!1 &1110677972
 GameObject:
   m_ObjectHideFlags: 0
@@ -3127,7 +3136,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000030517578}
+  m_AnchoredPosition: {x: 0, y: 124.37206}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1480824639
@@ -12056,7 +12065,7 @@ Tilemap:
       - {fileID: 0}
       - {fileID: 0}
       - {fileID: 0}
-      m_AnimationSpeed: 3.0000002
+      m_AnimationSpeed: 3
       m_AnimationTimeOffset: 0
       m_IsLooping: 1
   - first: {x: 2, y: 0, z: 0}
@@ -12629,10 +12638,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1760982535166012306, guid: 886cad2abdd17be4587069152cd5c1de, type: 3}
-      propertyPath: m_SortingOrder
-      value: 620
-      objectReference: {fileID: 0}
     - target: {fileID: 1760982535692097453, guid: 886cad2abdd17be4587069152cd5c1de, type: 3}
       propertyPath: m_Name
       value: Enemy
@@ -12713,10 +12718,6 @@ PrefabInstance:
       propertyPath: _sceneNetworkObjects.Array.data[6]
       value: 
       objectReference: {fileID: 8040292276739040216}
-    - target: {fileID: 1760982535922095012, guid: 886cad2abdd17be4587069152cd5c1de, type: 3}
-      propertyPath: _aiBehavior
-      value: 
-      objectReference: {fileID: 11400000, guid: 164eede1eb691d3498c95484fba2d697, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 886cad2abdd17be4587069152cd5c1de, type: 3}
 --- !u!1001 &4487084267535666713
