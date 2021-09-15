@@ -27,7 +27,7 @@ public class ItemDrop : Interactable
         if (player == null) return;
         if (player.Inventory == null) return;
 
-        if (player.Inventory.AddItem(new NetItemValue(ItemValue)))
+        if (player.Inventory.AddItem(ItemValue))
         {
             Despawn();
         }

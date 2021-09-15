@@ -382,7 +382,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Holds client authoritative updates received to send to other clients.
         /// </summary>
-        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates;
+        private ClientAuthoritativeUpdate _clientAuthoritativeUpdates = new ClientAuthoritativeUpdate();
         #endregion
 
         #region Const.
@@ -411,6 +411,11 @@ namespace FishNet.Component.Animating
         private void Awake()
         {
             FirstInitialize();
+        }
+
+        private void Start()
+        {
+            OnStartServer();
         }
 
         public override void OnSpawnServer(NetworkConnection connection)

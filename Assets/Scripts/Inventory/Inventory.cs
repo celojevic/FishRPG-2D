@@ -82,6 +82,11 @@ public class Inventory : NetworkBehaviour
         NetItems.Add(item);
         return true;
     }
+    [Server]
+    public bool AddItem(ItemValue item)
+    {
+        return AddItem(new NetItemValue(item));
+    }
 
     [Server]
     bool TryAddItem(NetItemValue item)

@@ -85,6 +85,8 @@ public class DatabaseEditor : Editor
         _db.Stats = EditorUtils.FindScriptableObjects<StatBase>();
         _db.Skills = EditorUtils.FindScriptableObjects<SkillBase>();
         _db.Resources = EditorUtils.FindScriptableObjects<ResourceData>();
+
+
     }
 
 }
