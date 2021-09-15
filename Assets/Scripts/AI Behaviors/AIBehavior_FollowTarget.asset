@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4271ac72281f7a2458700cb9478bdca4, type: 3}
   m_Name: AIBehavior_FollowTarget
   m_EditorClassIdentifier: 
+  GizmoColor: {r: 0, g: 1, b: 0, a: 1}

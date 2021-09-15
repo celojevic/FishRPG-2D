@@ -14,6 +14,9 @@ public class ItemBase : ScriptableObject, IStringBuilder
     [TextArea(3, 20)]
     public string Description;
 
+    [Header("Base Sounds")]
+    public AudioClip PickupSound;
+
     public virtual string BuildString()
     {
         return "";

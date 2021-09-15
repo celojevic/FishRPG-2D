@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Health Vial
   m_EditorClassIdentifier: 
   Sprite: {fileID: 21300000, guid: b1b23adaa335b6e488489f1cba4f566c, type: 3}
+  LevelReq: 0
   Description: 
+  PickupSound: {fileID: 8300000, guid: 7218c719213c0cd408e7ba14765ef745, type: 3}
   Effects:
   - Vital: 0
     Adjustment: 0
