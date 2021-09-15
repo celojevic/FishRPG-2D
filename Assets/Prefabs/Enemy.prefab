@@ -225,6 +225,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1760982535692097459}
+  - component: {fileID: 1760982535922095012}
   - component: {fileID: 1760982535692097458}
   - component: {fileID: 1760982535692097466}
   - component: {fileID: 1760982535692097460}
@@ -256,6 +257,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1760982535922095012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1760982535692097453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a181385c296dd9445b820ef58f7a4ef3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Target: {fileID: 0}
+  _speed: 1
+  _aiBehavior: {fileID: 11400000, guid: 9d6355d8dd8c1b441a063dc884638473, type: 2}
 --- !u!114 &1760982535692097458
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -268,7 +284,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a1b33eff4002a04b9c2adfb431b4cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Vitals: []
+  Vitals:
+  - {fileID: 1760982535692097460}
   Rewards: {fileID: 1760982535692097466}
 --- !u!114 &1760982535692097466
 MonoBehaviour:
@@ -287,6 +304,9 @@ MonoBehaviour:
   - Item: {fileID: 11400000, guid: 6fa38875fd8735347bd2afaf6c2f3f9b, type: 2}
     Quantity: 1
     Chance: 1
+  ExpRewards:
+  - Skill: {fileID: 11400000, guid: ae572b974f7718948821a4b10f73d352, type: 2}
+    Experience: 0
 --- !u!114 &1760982535692097460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,10 +386,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 1
+  _prefabId: 2
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 1760982535692097463}

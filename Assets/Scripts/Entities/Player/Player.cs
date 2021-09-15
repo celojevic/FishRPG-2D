@@ -34,6 +34,11 @@ public class Player : Entity
         Visuals = GetComponent<PlayerVisuals>();
     }
 
+    public override void OnStartServer()
+    {
+        FindObjectOfType<AIAgent>().Target = transform;
+    }
+
     #region Class
 
     public Appearance GetAppearance() => Class.Appearances[_appearanceIndex];
@@ -41,6 +46,7 @@ public class Player : Entity
     #endregion
 
     // TODO cache a bool[] for if they have a tool when adding items and equipping
+    //      or cache Items on server too
     public bool HasTool(ToolType toolType)
     {
         // check inv
