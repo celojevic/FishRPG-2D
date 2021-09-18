@@ -422,10 +422,7 @@ namespace FishNet.Component.Animating
 
         public override void OnStartServer()
         {
-            Debug.Log("Before base");
             base.OnStartServer();
-            Debug.Log("After base");
-
             //If using client authoritative then initialize clientAuthoritativeUpdates.
             if (_clientAuthoritative)
             {
@@ -438,8 +435,6 @@ namespace FishNet.Component.Animating
             {
                 _toClientsBuffer.Add(new byte[0]);
             }
-            Debug.Log("Endd");
-
         }
 
         private void Update()
