@@ -399,8 +399,8 @@ MonoBehaviour:
     Quantity: 1
     Chance: 1
   ExpRewards:
-  - Skill: {fileID: 11400000, guid: ae572b974f7718948821a4b10f73d352, type: 2}
-    Experience: 0
+  - Skill: {fileID: 11400000, guid: aaa96f625e1270e45b9e2965955f04a4, type: 2}
+    Experience: 5
 --- !u!114 &1760982535692097460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -480,7 +480,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
-  _prefabId: 2
+  _prefabId: 7
   _scenePathHash: 0
   _sceneId: 0
   _sceneNetworkObjects:

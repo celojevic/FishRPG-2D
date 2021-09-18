@@ -278,7 +278,7 @@ GameObject:
   - component: {fileID: 369108205668817390}
   - component: {fileID: 4576581613593028740}
   - component: {fileID: 4576581613593028741}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -439,6 +439,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2205b3cd3ae6682498e1c8d9e8c74203, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Levels: []
 --- !u!114 &3095267122229149581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -589,8 +590,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkObserver: {fileID: 0}
   _prefabId: 4
-  _scenePathHash: 584410112
+  _scenePathHash: 0
   _sceneId: 0
+  _sceneNetworkObjects: []
   SceneTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}

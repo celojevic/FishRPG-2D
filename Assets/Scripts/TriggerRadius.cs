@@ -9,6 +9,7 @@ namespace FishRPG.Triggers
     {
 
         [SerializeField] private LayerMask _triggeringLayers = default;
+        [SerializeField] private bool _useTrigger = true;
 
         [Header("Unity Events")]
         public UnityEvent<Collider2D> OnTriggerEnterActions;
@@ -33,8 +34,11 @@ namespace FishRPG.Triggers
 
             if ((_triggeringLayers & (1 << other.gameObject.layer)) != 0)
             {
-                OnTriggerEntered?.Invoke(other);
-                OnTriggerEnterActions?.Invoke(other);
+                if (other.isTrigger == _useTrigger)
+                {
+                    OnTriggerEntered?.Invoke(other);
+                    OnTriggerEnterActions?.Invoke(other);
+                }
             }
         }
 
@@ -43,10 +47,13 @@ namespace FishRPG.Triggers
         {
             if (!IsServer) return;
 
-            if ((_triggeringLayers & (1 << other.gameObject.layer)) != 0)
+            if ((_triggeringLayers & (1 << other.gameObject.layer)) != 0 && other.isTrigger)
             {
-                OnTriggerExited?.Invoke(other);
-                OnTriggerExitActions?.Invoke(other);
+                if (other.isTrigger == _useTrigger)
+                {
+                    OnTriggerExited?.Invoke(other);
+                    OnTriggerExitActions?.Invoke(other);
+                }
             }
         }
 
