@@ -1,6 +1,7 @@
 using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
+using FishRPG.Entities.Player;
 
 public class ItemDrop : Interactable
 {

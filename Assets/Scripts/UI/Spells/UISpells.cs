@@ -1,20 +1,23 @@
-using UnityEngine;
-
-public class UISpells : UiPanel
+namespace FishRPG.UI
 {
+    using UnityEngine;
 
-    [Header("UI Spells")]
-    [SerializeField] private UISpellSlot _slotPrefab = null;
-    [SerializeField] private Transform _scrollViewContent = null;
-
-    protected override void UiManager_OnPlayerAssigned()
+    public class UISpells : UiPanel
     {
-        base.UiManager_OnPlayerAssigned();
-        foreach (var item in UiManager.Player.Class.StartingSpells)
-        {
-            var slot = Instantiate(_slotPrefab, _scrollViewContent);
-            slot.Setup(item);
-        }
-    }
 
+        [Header("UI Spells")]
+        [SerializeField] private UISpellSlot _slotPrefab = null;
+        [SerializeField] private Transform _scrollViewContent = null;
+
+        protected override void UiManager_OnPlayerAssigned()
+        {
+            base.UiManager_OnPlayerAssigned();
+            foreach (var item in UiManager.Player.Class.StartingSpells)
+            {
+                var slot = Instantiate(_slotPrefab, _scrollViewContent);
+                slot.Setup(item);
+            }
+        }
+
+    }
 }

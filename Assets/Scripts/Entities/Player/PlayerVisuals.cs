@@ -1,101 +1,104 @@
-using FishNet.Component.Animating;
-using FishNet.Object;
-using UnityEngine;
-
-public class PlayerVisuals : NetworkBehaviour
+namespace FishRPG.Entities.Player
 {
+    using FishNet.Component.Animating;
+    using FishNet.Object;
+    using UnityEngine;
 
-    [Tooltip("The SpriteRenderer for the player's base sprite.")]
-    [SerializeField] private SpriteRenderer _sr = null;
-    public SpriteRenderer GetBaseRenderer() => _sr;
-
-    [SerializeField, EnumNameArray(typeof(EquipmentSlot))] 
-    private SpriteRenderer[] _equipmentRenderers = new SpriteRenderer[(int)EquipmentSlot.Count];
-
-    /// <summary>
-    /// The master Player script.
-    /// </summary>
-    private Player _player;
-    private Anim _currentAnimation;
-    private NetworkAnimator _netAnimator;
-
-    private void Awake()
+    public class PlayerVisuals : NetworkBehaviour
     {
-        _player = GetComponent<Player>();
-        _netAnimator = GetComponent<NetworkAnimator>();
-        if (_sr == null)
-            GetComponentInChildren<SpriteRenderer>();
-        AssignClassData();
-    }
 
-    void AssignClassData()
-    {
-        if (_player.Class == null) return;
+        [Tooltip("The SpriteRenderer for the player's base sprite.")]
+        [SerializeField] private SpriteRenderer _sr = null;
+        public SpriteRenderer GetBaseRenderer() => _sr;
 
-        var app = _player.GetAppearance();
-        _sr.sprite = app.Sprite;
-        _netAnimator.SetController(app.Controller);
-    }
+        [SerializeField, EnumNameArray(typeof(EquipmentSlot))]
+        private SpriteRenderer[] _equipmentRenderers = new SpriteRenderer[(int)EquipmentSlot.Count];
 
-    private void Update()
-    {
-        if (!IsOwner) return;
+        /// <summary>
+        /// The master Player script.
+        /// </summary>
+        private Player _player;
+        private Anim _currentAnimation;
+        private NetworkAnimator _netAnimator;
 
-        CheckSpriteFlip();
-        CheckAnimation();
-    }
-
-    void CheckSpriteFlip()
-    {
-        if (_player.Input.InputVector.x < 0)
+        private void Awake()
         {
-            FlipSprite(true);
+            _player = GetComponent<Player>();
+            _netAnimator = GetComponent<NetworkAnimator>();
+            if (_sr == null)
+                GetComponentInChildren<SpriteRenderer>();
+            AssignClassData();
         }
-        else if (_player.Input.InputVector.x > 0)
+
+        void AssignClassData()
         {
-            FlipSprite(false);
+            if (_player.Class == null) return;
+
+            var app = _player.GetAppearance();
+            _sr.sprite = app.Sprite;
+            _netAnimator.SetController(app.Controller);
         }
-    }
 
-    void FlipSprite(bool flip)
-    {
-        if (_sr.flipX == flip) return;
-
-        _sr.flipX = flip;
-        foreach (var item in _equipmentRenderers)
-            item.flipX = flip;
-    }
-
-    void CheckAnimation()
-    {
-        if (_player.Input.InputVector != Vector2.zero)
+        private void Update()
         {
-            ChangeAnimation(Anim.Walk);
+            if (!IsOwner) return;
+
+            CheckSpriteFlip();
+            CheckAnimation();
         }
-        else
+
+        void CheckSpriteFlip()
         {
-            ChangeAnimation(Anim.Idle);
+            if (_player.Input.InputVector.x < 0)
+            {
+                FlipSprite(true);
+            }
+            else if (_player.Input.InputVector.x > 0)
+            {
+                FlipSprite(false);
+            }
         }
-    }
 
-    void ChangeAnimation(Anim animation)
-    {
-        if (_currentAnimation == animation) return;
+        void FlipSprite(bool flip)
+        {
+            if (_sr.flipX == flip) return;
 
-        _currentAnimation = animation;
-        _netAnimator.Play(animation.ToString());
-    }
+            _sr.flipX = flip;
+            foreach (var item in _equipmentRenderers)
+                item.flipX = flip;
+        }
 
-    public void SetEquipmentSprite(EquipmentSlot slot, Sprite sprite)
-    {
-        _equipmentRenderers[(int)slot].sprite = sprite;
-    }
+        void CheckAnimation()
+        {
+            if (_player.Input.InputVector != Vector2.zero)
+            {
+                ChangeAnimation(Anim.Walk);
+            }
+            else
+            {
+                ChangeAnimation(Anim.Idle);
+            }
+        }
 
-    private enum Anim : byte
-    {
-        Idle,
-        Walk
+        void ChangeAnimation(Anim animation)
+        {
+            if (_currentAnimation == animation) return;
+
+            _currentAnimation = animation;
+            _netAnimator.Play(animation.ToString());
+        }
+
+        public void SetEquipmentSprite(EquipmentSlot slot, Sprite sprite)
+        {
+            _equipmentRenderers[(int)slot].sprite = sprite;
+        }
+
+        private enum Anim : byte
+        {
+            Idle,
+            Walk
+        }
+
     }
 
 }
-

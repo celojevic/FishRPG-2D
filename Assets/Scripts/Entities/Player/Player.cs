@@ -1,69 +1,72 @@
-using FishNet.Object;
-using FishRPG.AI;
-using UnityEngine;
-
-public class Player : Entity
+namespace FishRPG.Entities.Player
 {
+    using FishNet.Object;
+    using FishRPG.AI;
+    using UnityEngine;
 
-    [Header("Data")]
-    public ClassBase Class;
-    private byte _appearanceIndex = 0;
-
-    [Header("Components")]
-    public PlayerCombat Combat;
-    public PlayerEquipment Equipment;
-    public PlayerInput Input;
-    public PlayerInventory Inventory;
-    public PlayerMovement Movement;
-    public PlayerVisuals Visuals;
-
-    /// <summary>
-    /// Returns the true center of the player sprite.
-    /// TODO should be based on sprite then
-    /// </summary>
-    /// <returns></returns>
-    internal Vector2 GetCenter() => transform.position + new Vector3(0f, 0.5f);
-
-    protected override void Awake()
+    public class Player : Entity
     {
-        base.Awake();
 
-        Equipment = GetComponent<PlayerEquipment>();
-        Input = GetComponent<PlayerInput>();
-        Inventory = GetComponent<PlayerInventory>();
-        Movement = GetComponent<PlayerMovement>();
-        Visuals = GetComponent<PlayerVisuals>();
-    }
+        [Header("Data")]
+        public ClassBase Class;
+        private byte _appearanceIndex = 0;
 
-    #region Class
+        [Header("Components")]
+        public PlayerCombat Combat;
+        public PlayerEquipment Equipment;
+        public PlayerInput Input;
+        public PlayerInventory Inventory;
+        public PlayerMovement Movement;
+        public PlayerVisuals Visuals;
 
-    public Appearance GetAppearance() => Class.Appearances[_appearanceIndex];
+        /// <summary>
+        /// Returns the true center of the player sprite.
+        /// TODO should be based on sprite then
+        /// </summary>
+        /// <returns></returns>
+        internal Vector2 GetCenter() => transform.position + new Vector3(0f, 0.5f);
 
-    #endregion
-
-    // TODO cache a bool[] for if they have a tool when adding items and equipping
-    //      or cache Items on server too
-    public bool HasTool(ToolType toolType)
-    {
-        // check inv
-        foreach (var item in Inventory.NetItems)
+        protected override void Awake()
         {
-            if (item == null) continue;
-            var itemBase = Database.Instance.GetItemBase(item.Item.ItemBaseGuid);
-            if (itemBase != null && itemBase is ToolItem tool && tool.ToolType == toolType)
-                return true;
+            base.Awake();
+
+            Equipment = GetComponent<PlayerEquipment>();
+            Input = GetComponent<PlayerInput>();
+            Inventory = GetComponent<PlayerInventory>();
+            Movement = GetComponent<PlayerMovement>();
+            Visuals = GetComponent<PlayerVisuals>();
         }
 
-        // check equipment
-        foreach (var item in Equipment.NetEquipment)
+        #region Class
+
+        public Appearance GetAppearance() => Class.Appearances[_appearanceIndex];
+
+        #endregion
+
+        // TODO cache a bool[] for if they have a tool when adding items and equipping
+        //      or cache Items on server too
+        public bool HasTool(ToolType toolType)
         {
-            if (item == null) continue;
-            var equip = Database.Instance.GetItemBase(item.ItemBaseGuid);
-            if (equip != null && equip is ToolItem tool && tool.ToolType == toolType)
-                return true;
+            // check inv
+            foreach (var item in Inventory.NetItems)
+            {
+                if (item == null) continue;
+                var itemBase = Database.Instance.GetItemBase(item.Item.ItemBaseGuid);
+                if (itemBase != null && itemBase is ToolItem tool && tool.ToolType == toolType)
+                    return true;
+            }
+
+            // check equipment
+            foreach (var item in Equipment.NetEquipment)
+            {
+                if (item == null) continue;
+                var equip = Database.Instance.GetItemBase(item.ItemBaseGuid);
+                if (equip != null && equip is ToolItem tool && tool.ToolType == toolType)
+                    return true;
+            }
+
+            return false;
         }
 
-        return false;
     }
-
 }

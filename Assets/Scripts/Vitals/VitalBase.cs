@@ -6,7 +6,11 @@ using UnityEngine;
 public class VitalBase : NetworkBehaviour
 {
 
-    [SyncVar(OnChange = nameof(OnCurrentChanged))] private int _current;
+    #region Current
+
+    [SyncVar(OnChange = nameof(OnCurrentChanged)), SerializeField] 
+    private int _current;
+
     internal int CurrentVital
     {
         get => _current;
@@ -14,11 +18,16 @@ public class VitalBase : NetworkBehaviour
         {
             // same value
             if (value == _current) return;
-
             _current = value;
         }
     }
-    void OnCurrentChanged(int oldVal, int newVal, bool asServer) => OnVitalChanged?.Invoke();
+
+    void OnCurrentChanged(int oldVal, int newVal, bool asServer)
+    {
+        OnVitalChanged?.Invoke();
+    }
+
+    #endregion
 
     internal float Percent => (float)CurrentVital / (float)MaxVital;
 
@@ -55,6 +64,12 @@ public class VitalBase : NetworkBehaviour
         CurrentVital = Mathf.Clamp(CurrentVital + amount, _minVital, MaxVital);
     }
 
+    /// <summary>
+    /// Subtracts the given amount from the current vital. Clamped between minVital and MaxVital.
+    /// <para>Calls OnDeplete virtual method if CurrentVital hits the minVital.</para>
+    /// <para>Base method must be called in overrides!</para>
+    /// </summary>
+    /// <param name="amount"></param>The amount to subtract.
     [Server]
     public virtual void Subtract(int amount)
     {

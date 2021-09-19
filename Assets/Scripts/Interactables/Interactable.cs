@@ -1,5 +1,7 @@
 using FishNet.Object;
 using UnityEngine;
+using FishRPG.Entities.Player;
+using FishRPG.UI;
 
 public abstract class Interactable : NetworkBehaviour
 {

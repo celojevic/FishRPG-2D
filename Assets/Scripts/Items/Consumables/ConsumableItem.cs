@@ -1,4 +1,5 @@
 using UnityEngine;
+using FishRPG.Entities.Player;
 
 public abstract class ConsumableItem : ItemBase
 {

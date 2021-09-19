@@ -1,95 +1,98 @@
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class UiManager : MonoBehaviour
+namespace FishRPG.UI
 {
+    using System;
+    using UnityEngine;
+    using FishRPG.Entities.Player;
 
-    #region Singleton
-
-    /// <summary>
-    /// Singleton instance of the UI manager.
-    /// </summary>
-    public static UiManager Instance;
-
-    void InitSingleton()
+    public class UiManager : MonoBehaviour
     {
-        if (Instance == null)
-            Instance = this;
-        else if (Instance != this)
-            Destroy(gameObject);
-    }
 
-    #endregion
+        #region Singleton
 
-    private static Player _player;
-    public static Player Player
-    {
-        get => _player;
-        set
+        /// <summary>
+        /// Singleton instance of the UI manager.
+        /// </summary>
+        public static UiManager Instance;
+
+        void InitSingleton()
         {
-            _player = value;
-            OnPlayerAssigned?.Invoke();
-        }
-    }
-    public static event Action OnPlayerAssigned;
-
-    [SerializeField] private KeyCode _closeWindowKey = KeyCode.Escape;
-
-    private UiPanel[] _panels;
-
-    private void Awake()
-    {
-        InitSingleton();
-        FindUiPanels();
-    }
-
-    private void Start()
-    {
-        foreach (var item in _panels)
-        {
-            item.OnStart();
-        }
-    }
-
-    private void Update()
-    {
-        if (Player == null) return;
-
-        if (Input.GetKeyDown(_closeWindowKey))
-        {
-            CloseLastWindow();
+            if (Instance == null)
+                Instance = this;
+            else if (Instance != this)
+                Destroy(gameObject);
         }
 
-        foreach (var item in _panels)
-        {
-            item.CheckKeyDown();
-        }
-    }
+        #endregion
 
-    private void OnDestroy()
-    {
-        foreach (var item in _panels)
+        private static Player _player;
+        public static Player Player
         {
-            item.OnStop();
-        }
-    }
-
-    void FindUiPanels()
-    {
-        _panels = GetComponentsInChildren<UiPanel>();
-    }
-
-    void CloseLastWindow()
-    {
-        for (int i = 0; i < _panels.Length; i++)
-        {
-            if (_panels[i].gameObject.activeInHierarchy)
+            get => _player;
+            set
             {
-                _panels[i].gameObject.SetActive(false);
-                return;
+                _player = value;
+                OnPlayerAssigned?.Invoke();
             }
         }
-    }
+        public static event Action OnPlayerAssigned;
 
+        [SerializeField] private KeyCode _closeWindowKey = KeyCode.Escape;
+
+        private UiPanel[] _panels;
+
+        private void Awake()
+        {
+            InitSingleton();
+            FindUiPanels();
+        }
+
+        private void Start()
+        {
+            foreach (var item in _panels)
+            {
+                item.OnStart();
+            }
+        }
+
+        private void Update()
+        {
+            if (Player == null) return;
+
+            if (Input.GetKeyDown(_closeWindowKey))
+            {
+                CloseLastWindow();
+            }
+
+            foreach (var item in _panels)
+            {
+                item.CheckKeyDown();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var item in _panels)
+            {
+                item.OnStop();
+            }
+        }
+
+        void FindUiPanels()
+        {
+            _panels = GetComponentsInChildren<UiPanel>();
+        }
+
+        void CloseLastWindow()
+        {
+            for (int i = 0; i < _panels.Length; i++)
+            {
+                if (_panels[i].gameObject.activeInHierarchy)
+                {
+                    _panels[i].gameObject.SetActive(false);
+                    return;
+                }
+            }
+        }
+
+    }
 }

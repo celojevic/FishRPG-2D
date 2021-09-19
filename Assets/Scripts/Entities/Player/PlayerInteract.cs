@@ -1,60 +1,63 @@
-using FishNet;
-using FishNet.Connection;
-using FishNet.Object;
-using UnityEngine;
-
-public class PlayerInteract : NetworkBehaviour
+namespace FishRPG.Entities.Player
 {
+    using FishNet;
+    using FishNet.Connection;
+    using FishNet.Object;
+    using UnityEngine;
 
-    [SerializeField] private KeyCode _interactKey = KeyCode.F;
-
-    private Player _player;
-    private Interactable _interactableInRange;
-
-    private void Awake()
+    public class PlayerInteract : NetworkBehaviour
     {
-        _player = GetComponent<Player>(); 
-    }
 
-    private void Update()
-    {
-        if (!IsOwner) return;
+        [SerializeField] private KeyCode _interactKey = KeyCode.F;
 
-        if (Input.GetKeyDown(_interactKey))
+        private Player _player;
+        private Interactable _interactableInRange;
+
+        private void Awake()
         {
-            CmdTryInteract();
+            _player = GetComponent<Player>();
         }
-    }
 
-    [ServerRpc]
-    void CmdTryInteract()
-    {
-        if (_interactableInRange == null) return;
-
-        _interactableInRange.Interact(_player);
-        TargetInteractSuccess(InstanceFinder.ClientManager.Connection);
-    }
-
-    [TargetRpc]
-    void TargetInteractSuccess(NetworkConnection conn)
-    {
-        UiInteract.Hide();
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Interactable") && other.isTrigger)
+        private void Update()
         {
-            _interactableInRange = other.GetComponent<Interactable>();
-        }
-    }
+            if (!IsOwner) return;
 
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag("Interactable") && other.isTrigger)
+            if (Input.GetKeyDown(_interactKey))
+            {
+                CmdTryInteract();
+            }
+        }
+
+        [ServerRpc]
+        void CmdTryInteract()
         {
-            _interactableInRange = null;
-        }
-    }
+            if (_interactableInRange == null) return;
 
+            _interactableInRange.Interact(_player);
+            TargetInteractSuccess(InstanceFinder.ClientManager.Connection);
+        }
+
+        [TargetRpc]
+        void TargetInteractSuccess(NetworkConnection conn)
+        {
+            UiInteract.Hide();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            if (other.CompareTag("Interactable") && other.isTrigger)
+            {
+                _interactableInRange = other.GetComponent<Interactable>();
+            }
+        }
+
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            if (other.CompareTag("Interactable") && other.isTrigger)
+            {
+                _interactableInRange = null;
+            }
+        }
+
+    }
 }

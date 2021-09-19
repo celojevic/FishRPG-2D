@@ -1,5 +1,6 @@
 using FishNet.Object;
 using UnityEngine;
+using FishRPG.Entities.Player;
 
 public class ResourceNode : NetworkBehaviour
 {

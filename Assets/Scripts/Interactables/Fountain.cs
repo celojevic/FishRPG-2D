@@ -1,6 +1,7 @@
 using FishNet.Object;
 using System.Collections.Generic;
 using UnityEngine;
+using FishRPG.Entities.Player;
 
 public class Fountain : Interactable
 {

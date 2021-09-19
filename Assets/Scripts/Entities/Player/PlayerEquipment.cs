@@ -1,106 +1,110 @@
-using FishNet.Connection;
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
-using System;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class PlayerEquipment : NetworkBehaviour
+namespace FishRPG.Entities.Player
 {
+    using FishNet.Connection;
+    using FishNet.Object;
+    using FishNet.Object.Synchronizing;
+    using System;
+    using System.Collections.Generic;
+    using UnityEngine;
 
-    public readonly SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
-    [EnumNameArray(typeof(EquipmentSlot))]
-    public List<EquipmentItem> Equipment = new List<EquipmentItem>();
-
-    public event Action<EquipmentSlot> OnEquipmentChanged;
-
-    private Player _player;
-
-    private void Awake()
+    public class PlayerEquipment : NetworkBehaviour
     {
-        _player = GetComponent<Player>();
 
-        NetEquipment.Clear();
-        for (EquipmentSlot i = 0; i < EquipmentSlot.Count; i++)
-            NetEquipment.Add(null);
-    }
+        public readonly SyncList<NetEquipment> NetEquipment = new SyncList<NetEquipment>();
+        [EnumNameArray(typeof(EquipmentSlot))]
+        public List<EquipmentItem> Equipment = new List<EquipmentItem>();
 
-    #region Client Synclist Callbacks
+        public event Action<EquipmentSlot> OnEquipmentChanged;
 
-    public override void OnOwnershipClient(NetworkConnection newOwner)
-    {
-        base.OnOwnershipClient(newOwner);
-        if (!newOwner.IsLocalClient) return;
+        private Player _player;
 
-        Equipment = new List<EquipmentItem>();
-        for (EquipmentSlot i = 0; i < EquipmentSlot.Count; i++)
-            Equipment.Add(null);
-
-        NetEquipment.OnChange += NetEquipment_OnChange;
-    }
-
-    private void NetEquipment_OnChange(SyncListOperation op, int index, 
-        NetEquipment oldItem, NetEquipment newItem, bool asServer)
-    {
-        if (asServer) return;
-
-        switch (op)
+        private void Awake()
         {
-            case SyncListOperation.Set:
-                Equipment[index] = newItem?.ToEquipItem();
-                _player.Visuals.SetEquipmentSprite((EquipmentSlot)index, Equipment[index]?.Sprite);
-                break;
+            _player = GetComponent<Player>();
+
+            NetEquipment.Clear();
+            for (EquipmentSlot i = 0; i < EquipmentSlot.Count; i++)
+                NetEquipment.Add(null);
         }
 
-        OnEquipmentChanged?.Invoke((EquipmentSlot)index);
-    }
+        #region Client Synclist Callbacks
 
-    private void OnDestroy()
-    {
-        NetEquipment.OnChange -= NetEquipment_OnChange;
-    }
-
-    #endregion
-
-    #region Server
-
-    [Server]
-    public bool Equip(EquipmentItem equipment)
-    {
-        int index = (int)equipment.Slot;
-        if (NetEquipment[index] == null)
+        public override void OnOwnershipClient(NetworkConnection newOwner)
         {
-            NetEquipment[index] = equipment.ToNetEquip();
-            return true;
-        }
-        else
-        {
-            // TODO swap with inv
-            Debug.Log("isno nol");
+            base.OnOwnershipClient(newOwner);
+            if (!newOwner.IsLocalClient) return;
+
+            Equipment = new List<EquipmentItem>();
+            for (EquipmentSlot i = 0; i < EquipmentSlot.Count; i++)
+                Equipment.Add(null);
+
+            NetEquipment.OnChange += NetEquipment_OnChange;
         }
 
-        return false;
-    }
-
-    [ServerRpc]
-    public void CmdUnequip(EquipmentSlot slot)
-    {
-        // out of range
-        if (slot >= EquipmentSlot.Count) return;
-
-        // can't unequip slot with nothing in it
-        EquipmentItem equip = Equipment[(int)slot];
-        if (equip == null) return;
-
-        if (_player.Inventory.AddItem(new NetItemValue(equip)))
+        private void NetEquipment_OnChange(SyncListOperation op, int index,
+            NetEquipment oldItem, NetEquipment newItem, bool asServer)
         {
-            NetEquipment[(int)slot] = null;
+            if (asServer) return;
+
+            switch (op)
+            {
+                case SyncListOperation.Set:
+                    Equipment[index] = newItem?.ToEquipItem();
+                    _player.Visuals.SetEquipmentSprite((EquipmentSlot)index, Equipment[index]?.Sprite);
+                    break;
+            }
+
+            OnEquipmentChanged?.Invoke((EquipmentSlot)index);
         }
+
+        private void OnDestroy()
+        {
+            NetEquipment.OnChange -= NetEquipment_OnChange;
+        }
+
+        #endregion
+
+        #region Server
+
+        [Server]
+        public bool Equip(EquipmentItem equipment)
+        {
+            int index = (int)equipment.Slot;
+            if (NetEquipment[index] == null)
+            {
+                NetEquipment[index] = equipment.ToNetEquip();
+                return true;
+            }
+            else
+            {
+                // TODO swap with inv
+                Debug.Log("isno nol");
+            }
+
+            return false;
+        }
+
+        [ServerRpc]
+        public void CmdUnequip(EquipmentSlot slot)
+        {
+            // out of range
+            if (slot >= EquipmentSlot.Count) return;
+
+            // can't unequip slot with nothing in it
+            EquipmentItem equip = Equipment[(int)slot];
+            if (equip == null) return;
+
+            if (_player.Inventory.AddItem(new NetItemValue(equip)))
+            {
+                NetEquipment[(int)slot] = null;
+            }
+        }
+
+        #endregion
+
     }
-
-    #endregion
-
 }
+
 
 [System.Serializable]
 public class NetEquipment

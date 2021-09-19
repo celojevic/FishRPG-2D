@@ -1,27 +1,28 @@
-using UnityEngine;
-
-public class UIVitalBars : MonoBehaviour
+namespace FishRPG.UI
 {
+    using UnityEngine;
 
-    [SerializeField] private UIPlayerVitalBar _prefab = null;
-
-    private void Start()
+    public class UIVitalBars : MonoBehaviour
     {
-        UiManager.OnPlayerAssigned += UiManager_OnPlayerAssigned;
-    }
 
-    private void OnDestroy()
-    {
-        UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
-    }
+        [SerializeField] private UIPlayerVitalBar _prefab = null;
 
-    private void UiManager_OnPlayerAssigned()
-    {
-        UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
-        for (int i = 0; i < UiManager.Player.Vitals.Length; i++)
+        private void Start()
         {
-            Instantiate(_prefab, transform).Setup(UiManager.Player.Vitals[i]);
+            UiManager.OnPlayerAssigned += UiManager_OnPlayerAssigned;
         }
-    }
 
+        private void OnDestroy()
+        {
+            UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
+        }
+
+        private void UiManager_OnPlayerAssigned()
+        {
+            UiManager.OnPlayerAssigned -= UiManager_OnPlayerAssigned;
+            for (int i = 0; i < UiManager.Player.Vitals.Length; i++)
+                Instantiate(_prefab, transform).Setup(UiManager.Player.Vitals[i]);
+        }
+
+    }
 }

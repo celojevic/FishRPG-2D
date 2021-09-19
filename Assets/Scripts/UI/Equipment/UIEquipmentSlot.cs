@@ -1,32 +1,35 @@
-using UnityEngine;
-
-public class UIEquipmentSlot : UISlot
+namespace FishRPG.UI
 {
+    using UnityEngine;
 
-    [SerializeField] private EquipmentSlot _mySlot;
-
-    protected override void HandleRightClick()
+    public class UIEquipmentSlot : UISlot
     {
-        if (UiManager.Player.Equipment.Equipment[(int)_mySlot] != null)
-            UiManager.Player.Equipment.CmdUnequip(_mySlot);
-    }
 
-    protected override void HandlePointerEnter()
-    {
-        if (_mySlot < 0 || _mySlot >= EquipmentSlot.Count) return;
+        [SerializeField] private EquipmentSlot _mySlot;
 
-        var equip = UiManager.Player?.Equipment?.Equipment[(int)_mySlot];
-        if (equip != null)
-            UITooltip.Show(equip.BuildString());
-    }
-
-    private void OnValidate()
-    {
-        if (_mySlot == EquipmentSlot.Count)
+        protected override void HandleRightClick()
         {
-            Debug.LogWarning($"Slot cannot be the Count. Assign a valid slot to {name}.");
-            _mySlot = EquipmentSlot.Weapon;
+            if (UiManager.Player.Equipment.Equipment[(int)_mySlot] != null)
+                UiManager.Player.Equipment.CmdUnequip(_mySlot);
         }
-    }
 
+        protected override void HandlePointerEnter()
+        {
+            if (_mySlot < 0 || _mySlot >= EquipmentSlot.Count) return;
+
+            var equip = UiManager.Player?.Equipment?.Equipment[(int)_mySlot];
+            if (equip != null)
+                UITooltip.Show(equip.BuildString());
+        }
+
+        private void OnValidate()
+        {
+            if (_mySlot == EquipmentSlot.Count)
+            {
+                Debug.LogWarning($"Slot cannot be the Count. Assign a valid slot to {name}.");
+                _mySlot = EquipmentSlot.Weapon;
+            }
+        }
+
+    }
 }

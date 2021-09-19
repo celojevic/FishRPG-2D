@@ -9,6 +9,7 @@ public class Enemy : Entity
     protected override void Awake()
     {
         base.Awake();
+
         Rewards = GetComponent<EnemyRewards>();
     }
 

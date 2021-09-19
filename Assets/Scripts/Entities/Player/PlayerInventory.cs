@@ -1,40 +1,43 @@
-using UnityEngine;
-using FishNet.Object;
-
-public class PlayerInventory : Inventory
+namespace FishRPG.Entities.Player
 {
+    using UnityEngine;
+    using FishNet.Object;
 
-    private Player _player;
-
-    private void Awake()
+    public class PlayerInventory : Inventory
     {
-        _player = GetComponent<Player>();
-    }
 
-    #region Using Items
+        private Player _player;
 
-    [ServerRpc]
-    public void CmdUseItem(int slotIndex)
-    {
-        if (NetItems[slotIndex]?.Item != null)
+        private void Awake()
         {
-            ItemBase item = Database.Instance?.GetItemBase(NetItems[slotIndex].Item.ItemBaseGuid);
-            if (item)
+            _player = GetComponent<Player>();
+        }
+
+        #region Using Items
+
+        [ServerRpc]
+        public void CmdUseItem(int slotIndex)
+        {
+            if (NetItems[slotIndex]?.Item != null)
             {
-                if (item is ConsumableItem consumable)
+                ItemBase item = Database.Instance?.GetItemBase(NetItems[slotIndex].Item.ItemBaseGuid);
+                if (item)
                 {
-                    if (consumable.Use(_player))
-                        NetItems.RemoveAt(slotIndex);
-                }
-                else if (item is EquipmentItem equipment)
-                {
-                    if (_player.Equipment.Equip(equipment))
-                        NetItems.RemoveAt(slotIndex);
+                    if (item is ConsumableItem consumable)
+                    {
+                        if (consumable.Use(_player))
+                            NetItems.RemoveAt(slotIndex);
+                    }
+                    else if (item is EquipmentItem equipment)
+                    {
+                        if (_player.Equipment.Equip(equipment))
+                            NetItems.RemoveAt(slotIndex);
+                    }
                 }
             }
         }
+
+        #endregion
+
     }
-
-    #endregion
-
 }
