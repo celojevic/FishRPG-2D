@@ -24,6 +24,7 @@ public class VitalBase : NetworkBehaviour
 
     void OnCurrentChanged(int oldVal, int newVal, bool asServer)
     {
+        Debug.Log($"Old: {oldVal}, new: {newVal}, as server: {asServer}");
         OnVitalChanged?.Invoke();
     }
 
@@ -50,6 +51,7 @@ public class VitalBase : NetworkBehaviour
 
     public override void OnStartServer()
     {
+        base.OnStartServer();
         CurrentVital = MaxVital;
     }
 

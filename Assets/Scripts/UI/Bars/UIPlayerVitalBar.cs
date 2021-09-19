@@ -23,7 +23,6 @@ namespace FishRPG.UI
 
         public void Setup(VitalBase vital)
         {
-            Debug.Log("Vital bar created: " + vital);
             if (UiManager.Player != null)
             {
                 _vital = vital;
