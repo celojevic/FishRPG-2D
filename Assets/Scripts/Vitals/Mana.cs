@@ -1,22 +1,25 @@
-using UnityEngine;
-
-public class Mana : VitalBase
+namespace FishRPG.Vitals
 {
+    using UnityEngine;
 
-    public override void Add(int amount)
+    public class Mana : VitalBase
     {
-        base.Add(amount);
 
-        PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}",
-            Color.cyan, gameObject);
+        public override void Add(int amount)
+        {
+            base.Add(amount);
+
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"+{amount}",
+                Color.cyan, gameObject);
+        }
+
+        public override void Subtract(int amount)
+        {
+            base.Subtract(amount);
+
+            PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}",
+                Color.magenta, gameObject);
+        }
+
     }
-
-    public override void Subtract(int amount)
-    {
-        base.Subtract(amount);
-
-        PlayerMessageHandler.SendPlayerMsg(Owner, MessageType.Action, $"-{amount}",
-            Color.magenta, gameObject);
-    }
-
 }

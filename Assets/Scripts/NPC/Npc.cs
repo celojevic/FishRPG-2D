@@ -1,13 +1,18 @@
-using TMPro;
-using UnityEngine;
-using FishRPG.Entities.Player;
-
-public class Npc : Interactable
+namespace FishRPG.Interactables
 {
+    using UnityEngine;
+    using FishRPG.Entities.Player;
+    using FishRPG.Dialogue.Runtime;
 
-    public override void Interact(Player player)
+    public class Npc : Interactable
     {
-        Debug.Log("TODO open dialogue with this npc");
-    }
 
+        [SerializeField] private DialogueData _dialogue = null;
+
+        public override void Interact(Player player)
+        {
+            Debug.Log(_dialogue.Nodes[0].Text);
+        }
+
+    }
 }

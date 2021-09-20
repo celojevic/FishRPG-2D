@@ -3,6 +3,8 @@ namespace FishRPG.Entities.Player
     using FishNet.Object;
     using FishNet.Object.Synchronizing;
     using UnityEngine;
+    using Enemy;
+    using FishRPG.Vitals;
 
     public class PlayerCombat : NetworkBehaviour
     {

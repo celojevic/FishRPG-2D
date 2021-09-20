@@ -1,20 +1,22 @@
-using FishNet.Object;
-using System.Collections.Generic;
-using UnityEngine;
-using FishRPG.Entities.Player;
-
-public class Fountain : Interactable
+namespace FishRPG.Interactables
 {
+    using FishNet.Object;
+    using UnityEngine;
+    using FishRPG.Entities.Player;
 
-    [Header("Fountain")]
-    [SerializeField, Min(0)] private int _replenishAmount = 100;
-    [SerializeField] private VitalType _vital;
-
-    [Server]
-    public override void Interact(Player player)
+    public class Fountain : Interactable
     {
-        player.GetVital(_vital).Add(_replenishAmount);
+
+        [Header("Fountain")]
+        [SerializeField, Min(0)] private int _replenishAmount = 100;
+        [SerializeField] private VitalType _vital;
+
+        [Server]
+        public override void Interact(Player player)
+        {
+            player.GetVital(_vital).Add(_replenishAmount);
+        }
+
     }
 
 }
-

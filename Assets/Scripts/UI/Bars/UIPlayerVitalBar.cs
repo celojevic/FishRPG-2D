@@ -1,5 +1,6 @@
 namespace FishRPG.UI
 {
+    using FishRPG.Vitals;
     using TMPro;
     using UnityEngine;
     using UnityEngine.UI;

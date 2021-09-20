@@ -1,39 +1,43 @@
-using FishNet.Object;
-using UnityEngine;
-
-public class Entity : NetworkBehaviour
+namespace FishRPG.Entities
 {
+    using FishNet.Object;
+    using FishRPG.Vitals;
+    using UnityEngine;
 
-    [Header("Entity Components")]
-    public VitalBase[] Vitals;
-
-    protected virtual void Awake()
+    public class Entity : NetworkBehaviour
     {
-        Vitals = GetComponents<VitalBase>();
-    }
 
-    #region Vitals
+        [Header("Entity Components")]
+        public VitalBase[] Vitals;
 
-    public VitalBase GetVital(VitalType type)
-    {
-        switch (type)
+        protected virtual void Awake()
         {
-            case VitalType.Health:
-                foreach (var item in Vitals)
-                    if (item is Health)
-                        return item;
-                break;
-
-            case VitalType.Mana:
-                foreach (var item in Vitals)
-                    if (item is Mana)
-                        return item;
-                break;
+            Vitals = GetComponents<VitalBase>();
         }
 
-        return null;
+        #region Vitals
+
+        public VitalBase GetVital(VitalType type)
+        {
+            switch (type)
+            {
+                case VitalType.Health:
+                    foreach (var item in Vitals)
+                        if (item is Health)
+                            return item;
+                    break;
+
+                case VitalType.Mana:
+                    foreach (var item in Vitals)
+                        if (item is Mana)
+                            return item;
+                    break;
+            }
+
+            return null;
+        }
+
+        #endregion
+
     }
-
-    #endregion
-
 }

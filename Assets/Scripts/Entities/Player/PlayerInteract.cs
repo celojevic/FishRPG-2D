@@ -3,6 +3,7 @@ namespace FishRPG.Entities.Player
     using FishNet;
     using FishNet.Connection;
     using FishNet.Object;
+    using FishRPG.Interactables;
     using UnityEngine;
 
     public class PlayerInteract : NetworkBehaviour

@@ -1,23 +1,27 @@
-using FishNet.Object;
-using UnityEngine;
-
-[RequireComponent(typeof(Enemy))]
-public class EnemyRewards : ItemDropper 
+namespace FishRPG.Entities.Enemy
 {
+    using FishNet.Object;
+    using UnityEngine;
 
-    // TODO options: drops for killer only, drops for anyone
-    public ItemReward[] ItemRewards;
-    public ExpReward[] ExpRewards;
-
-    [Server]
-    public void DropItems()
+    [RequireComponent(typeof(Enemy))]
+    public class EnemyRewards : ItemDropper
     {
-        if (!ItemRewards.IsValid()) return;
 
-        SpawnItemDrop(
-            new ItemValue(ItemRewards[Random.Range(0, ItemRewards.Length)]),
-            transform.position
-        );
+        // TODO options: drops for killer only, drops for anyone
+        public ItemReward[] ItemRewards;
+        public ExpReward[] ExpRewards;
+
+        [Server]
+        public void DropItems()
+        {
+            if (!ItemRewards.IsValid()) return;
+
+            SpawnItemDrop(
+                new ItemValue(ItemRewards[Random.Range(0, ItemRewards.Length)]),
+                transform.position
+            );
+        }
+
     }
 
 }

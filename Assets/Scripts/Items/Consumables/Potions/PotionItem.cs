@@ -2,6 +2,7 @@ using FishNet.Object;
 using System;
 using UnityEngine;
 using FishRPG.Entities.Player;
+using FishRPG.Vitals;
 
 [CreateAssetMenu(menuName = "FishRPG/Item/Consumable/Potion")]
 public class PotionItem : ConsumableItem

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfdd779557a43d34e982ea602cc4ceb3, type: 3}
+  m_Name: Doc
+  m_EditorClassIdentifier: 
+  Nodes:
+  - Guid: 6e3f945e-7970-4953-b5e1-7b05e67a463b
+    Text: How goes it?
+    Position: {x: 364, y: 200}
+  Edges:
+  - BaseNodeGuid: 4f5f30fc-b805-4b35-8ef4-3fe7fe79dbb0
+    PortName: Next
+    TargetNodeGuid: 6e3f945e-7970-4953-b5e1-7b05e67a463b

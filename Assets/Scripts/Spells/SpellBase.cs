@@ -1,3 +1,4 @@
+using FishRPG.Entities;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "FishRPG/Spells/Base")]

@@ -1,4 +1,5 @@
 using FishNet.Object;
+using FishRPG.Vitals;
 using UnityEngine;
 
 public class TouchDamage : NetworkBehaviour

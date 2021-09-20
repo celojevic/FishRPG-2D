@@ -1,32 +1,35 @@
-using FishNet.Object;
-using UnityEngine;
-
-public class Enemy : Entity
+namespace FishRPG.Entities.Enemy
 {
-    [Header("Enemy Components")]
-    public EnemyRewards Rewards;
+    using FishNet.Object;
+    using UnityEngine;
 
-    protected override void Awake()
+    public class Enemy : Entity
     {
-        base.Awake();
+        [Header("Enemy Components")]
+        public EnemyRewards Rewards;
 
-        Rewards = GetComponent<EnemyRewards>();
+        protected override void Awake()
+        {
+            base.Awake();
+
+            Rewards = GetComponent<EnemyRewards>();
+        }
+
+        public override void OnStartServer()
+        {
+            GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
+        }
+
+        public override void OnStopServer()
+        {
+            GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
+        }
+
+        [Server]
+        private void Enemy_OnDepleted()
+        {
+            Rewards.DropItems();
+        }
+
     }
-
-    public override void OnStartServer()
-    {
-        GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
-    }
-
-    public override void OnStopServer()
-    {
-        GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
-    }
-
-    [Server]
-    private void Enemy_OnDepleted()
-    {
-        Rewards.DropItems();
-    }
-
 }

@@ -1,4 +1,5 @@
 using FishNet.Object;
+using FishRPG.Interactables;
 using UnityEngine;
 
 public class ItemDropper : NetworkBehaviour
