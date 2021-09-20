@@ -3,7 +3,7 @@ namespace FishRPG.Dialogue.Runtime
     using System;
 
     [Serializable]
-    public class NodeEdgeData
+    public class EdgeData
     {
 
         public string BaseNodeGuid;

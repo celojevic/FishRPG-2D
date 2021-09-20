@@ -40,10 +40,10 @@ namespace FishRPG.Dialogue.Editor
             Edge[] connectedPorts = _edges.Where(x => x.input.node != null).ToArray();
             for (int i = 0; i < connectedPorts.Length; i++)
             {
-                DialogueNode inputNode = connectedPorts[i].input.node as DialogueNode;
                 DialogueNode outputNode = connectedPorts[i].output.node as DialogueNode;
+                DialogueNode inputNode = connectedPorts[i].input.node as DialogueNode;
 
-                saveData.Edges.Add(new NodeEdgeData
+                saveData.Edges.Add(new EdgeData
                 {
                     BaseNodeGuid = outputNode.Guid,
                     PortName = connectedPorts[i].output.portName,
@@ -52,8 +52,10 @@ namespace FishRPG.Dialogue.Editor
             }
 
             // save all nodes except entry node
-            foreach (DialogueNode node in _nodes.Where(n => !n.IsEntryPoint))
+            foreach (DialogueNode node in _nodes)
             {
+                if (node.IsEntryPoint) continue;
+
                 saveData.Nodes.Add(new DialogueNodeData
                 {
                     Guid = node.Guid,
@@ -65,8 +67,31 @@ namespace FishRPG.Dialogue.Editor
             if (!AssetDatabase.IsValidFolder("Assets/Scripts/Dialogue/Runtime/Save Data"))
                 AssetDatabase.CreateFolder("Assets", "Scripts/Dialogue/Runtime/Save Data");
 
-            // save it
-            AssetDatabase.CreateAsset(saveData, $"Assets/Scripts/Dialogue/Runtime/Save Data/{fileName}.asset");
+            // check if file exists
+            var loadedAsset = AssetDatabase.LoadAssetAtPath<DialogueData>(
+                $"Assets/Scripts/Dialogue/Runtime/Save Data/{fileName}.asset");
+
+            // overwrite
+            if (loadedAsset != null)
+            {
+                if (!EditorUtility.DisplayDialog("File Already Exists",
+                    $"A dialogue already exists with the filename '{fileName}'.\n" +
+                    $"Would you like to overwrite it?",
+                    "Yes", "No"))
+                {
+                    return;
+                }
+
+                loadedAsset.Nodes = saveData.Nodes;
+                loadedAsset.Edges = saveData.Edges;
+                EditorUtility.SetDirty(loadedAsset);
+            }
+            // save a new one
+            else
+            {
+                AssetDatabase.CreateAsset(saveData, $"Assets/Scripts/Dialogue/Runtime/Save Data/{fileName}.asset");
+            }
+
             AssetDatabase.SaveAssets();
         }
 
@@ -115,7 +140,7 @@ namespace FishRPG.Dialogue.Editor
                 DialogueNode node = _graphView.CreateNode(nodeData.Text, nodeData.Position);
                 node.Guid = nodeData.Guid;
 
-                List<NodeEdgeData> ports = loadData.Edges
+                List<EdgeData> ports = loadData.Edges
                     .Where(x => x.BaseNodeGuid == nodeData.Guid).ToList();
                 ports.ForEach(port => _graphView.AddChoicePort(node, port.PortName));
 
@@ -133,12 +158,6 @@ namespace FishRPG.Dialogue.Editor
                 for (int j = 0; j < connections.Count; j++)
                 {
                     string targetNodeGuid = connections[j].TargetNodeGuid;
-
-                    foreach (var item in _nodes)
-                    {
-                        Debug.Log((item as DialogueNode).Guid.ToString());
-                    }
-
                     DialogueNode targetNode = _nodes.First(x => x.Guid == targetNodeGuid);
 
                     // link nodes

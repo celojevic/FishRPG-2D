@@ -7,7 +7,7 @@ namespace FishRPG.Dialogue.Runtime
     {
 
         public List<DialogueNodeData> Nodes = new List<DialogueNodeData>();
-        public List<NodeEdgeData> Edges = new List<NodeEdgeData>();
+        public List<EdgeData> Edges = new List<EdgeData>();
 
     }
 }

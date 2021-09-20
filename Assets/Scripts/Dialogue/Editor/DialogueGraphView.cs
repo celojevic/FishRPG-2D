@@ -69,7 +69,6 @@ namespace FishRPG.Dialogue.Editor
 
             entryNode.capabilities &= ~Capabilities.Movable;
             entryNode.capabilities &= ~Capabilities.Deletable;
-            entryNode.capabilities &= ~Capabilities.Selectable;
             entryNode.RefreshExpandedState();
 
             return entryNode;

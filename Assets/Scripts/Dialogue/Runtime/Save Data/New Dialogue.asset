@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: New Dialogue
   m_EditorClassIdentifier: 
   Nodes:
-  - Guid: 
-    Text: chiken
-    Position: {x: 693, y: 188}
-  - Guid: 
-    Text: asssddd
-    Position: {x: 390, y: 228}
+  - Guid: 999ea358-b7e3-4af8-b9a0-48577c71aabc
+    Text: hi
+    Position: {x: 397, y: 234}
+  - Guid: 0ade0927-2e30-4df1-9e06-a75affe2a769
+    Text: how u
+    Position: {x: 707, y: 283}
   Edges:
-  - BaseNodeGuid: 
+  - BaseNodeGuid: 5ca36f0f-15a3-4c58-9b6b-cb02a4404a26
     PortName: Next
-    TargetNodeGuid: 
-  - BaseNodeGuid: 
-    PortName: Choice 1
-    TargetNodeGuid: 
+    TargetNodeGuid: 999ea358-b7e3-4af8-b9a0-48577c71aabc
+  - BaseNodeGuid: 999ea358-b7e3-4af8-b9a0-48577c71aabc
+    PortName: hi
+    TargetNodeGuid: 0ade0927-2e30-4df1-9e06-a75affe2a769
