@@ -5,8 +5,11 @@ namespace FishRPG.Entities.Enemy
 
     public class Enemy : Entity
     {
+
         [Header("Enemy Components")]
         public EnemyRewards Rewards;
+
+
 
         protected override void Awake()
         {
@@ -17,12 +20,16 @@ namespace FishRPG.Entities.Enemy
 
         public override void OnStartServer()
         {
-            GetVital(VitalType.Health).OnDepleted += Enemy_OnDepleted;
+            var health = GetVital(VitalType.Health);
+            if (health)
+                health.OnDepleted += Enemy_OnDepleted;
         }
 
         public override void OnStopServer()
         {
-            GetVital(VitalType.Health).OnDepleted -= Enemy_OnDepleted;
+            var health = GetVital(VitalType.Health);
+            if (health)
+                health.OnDepleted -= Enemy_OnDepleted;
         }
 
         [Server]

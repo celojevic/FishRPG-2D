@@ -47,6 +47,7 @@ MonoBehaviour:
   _triggeringLayers:
     serializedVersion: 2
     m_Bits: 8
+  _useTrigger: 1
   OnTriggerEnterActions:
     m_PersistentCalls:
       m_Calls:
@@ -321,7 +322,6 @@ GameObject:
   - component: {fileID: 1760982535922095012}
   - component: {fileID: 1760982535692097458}
   - component: {fileID: 1760982535692097466}
-  - component: {fileID: 1760982535692097460}
   - component: {fileID: 1760982535692097457}
   - component: {fileID: 1760982535692097456}
   - component: {fileID: 1760982535692097462}
@@ -379,7 +379,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Vitals:
-  - {fileID: 1760982535692097460}
+  - {fileID: 0}
   Rewards: {fileID: 1760982535692097466}
 --- !u!114 &1760982535692097466
 MonoBehaviour:
@@ -401,19 +401,6 @@ MonoBehaviour:
   ExpRewards:
   - Skill: {fileID: 11400000, guid: aaa96f625e1270e45b9e2965955f04a4, type: 2}
     Experience: 5
---- !u!114 &1760982535692097460
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1760982535692097453}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1ddc5e6fec33b541853d832dd90d099, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MaxVital: 50
 --- !u!50 &1760982535692097457
 Rigidbody2D:
   serializedVersion: 4
@@ -492,7 +479,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   SceneTransformProperties:
-    Position: {x: -3.48, y: 0, z: 0}
+    Position: {x: -5.45, y: -6.2, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 1}
     LocalScale: {x: 1, y: 1, z: 1}
 --- !u!114 &1760982535692097461
